@@ -93,6 +93,17 @@ describe('The net.socket module',function()
             i:connect(80,'www.google.com')
           end)
         
+        it('can connect to www.google.com and address is correct',function(done)
+            i:on('connect',async(function(j)
+                  local addr = i:address()
+                  assert.is_number(addr.port)
+                  assert.is_string(addr.address)
+                  assert.is_true(addr.family == 'ipv4' or addr.family == 'ipv6')
+                  done()
+              end))
+            i:connect(80,'www.google.com')
+          end)
+        
         it('can write and drain event is emitted',function(done)
             i:on('drain',async(function()
                   local data = outfifo:read('*l')
@@ -124,7 +135,7 @@ describe('The net.socket module',function()
               end))
             i:connect(12345)
           end)
-                
+        
         it('data event is emitted with correct argument',function(done)
             local nc_data = 'hello world'
             i:on('data',async(function(data)

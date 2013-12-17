@@ -193,7 +193,16 @@ local new = function()
   
   self.address = function()
     if sock then
-      return sock:getsockname()
+      local res = {sock:getsockname()}
+      if #res == 3 then
+        local res_obj = {
+          address = res[1],
+          port = tonumber(res[2]),
+          family = res[3] == 'inet' and 'ipv4' or 'ipv6',
+        }
+        return res_obj
+      end
+      return
     end
   end
   
