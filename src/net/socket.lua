@@ -45,10 +45,12 @@ local new = function()
     assert(sock)
     return ev.IO.new(function()
         local data,err,part = sock:receive(8192)
-        if err then
-          on_error(err)
-        else
+        data = part or data
+        if data then
           self:emit('data',data or part)
+        end
+        if err and err ~= 'timeout' then
+          on_error(err)
         end
       end,sock:getfd(),ev.READ)
   end
