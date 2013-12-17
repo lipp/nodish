@@ -141,6 +141,7 @@ local new = function()
   
   self._transfer = function(_,s)
     sock = s
+    sock:settimeout(0)
     on_connect()
   end
   
