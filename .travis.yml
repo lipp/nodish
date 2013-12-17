@@ -15,11 +15,11 @@ install:
   - cd emitter
   - sudo luarocks make rockspecs/emitter-scm-1.rockspec
   - cd ../
-  - git clone git://github.com/lipp/lua-ev-net.git
-  - cd lua-ev-net
-  - sudo luarocks make rockspecs/lua-ev-net-scm-1.rockspec
+  - git clone git://github.com/lipp/lua-ev-nexttick.git
+  - cd lua-ev-nexttick
+  - sudo luarocks make rockspecs/lua-ev-nexttick-scm-1.rockspec
   - cd ../
-  - sudo luarocks make rockspecs/lua-jet-scm-1.rockspec
+  - sudo luarocks make rockspecs/lua-ev-net-scm-1.rockspec
 
 script: "busted spec"
 

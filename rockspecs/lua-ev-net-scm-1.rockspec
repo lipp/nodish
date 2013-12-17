@@ -1,4 +1,4 @@
-package = "emitter"
+package = "lua-ev-net"
 version = "scm-1"
 
 source = {
@@ -23,7 +23,9 @@ build = {
   type = 'none',
   install = {
     lua = {
+      ['net'] = 'src/net.lua',
       ['net.socket'] = 'src/net/socket.lua',
+      ['net.server'] = 'src/net/server.lua',	
     }
   }
 }
