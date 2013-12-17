@@ -104,9 +104,27 @@ describe('The net.socket module',function()
                   i:fin('posl\n')
               end))
             i:connect(12345)
-            
           end)
         
+        it('can write and drain event is emitted with 500k bytes',function(done)
+            local lines = 100
+            local many_bytes = string.rep('hallo',1000)
+            i:on('drain',async(function()
+                  for x = 1,lines do
+                    local data = outfifo:read('*l')
+                    assert.is_equal(data,many_bytes)
+                  end
+                  done()
+              end))
+            i:on('connect',async(function()
+                  for x = 1,lines do
+                    i:write(many_bytes..'\n')
+                  end
+                  i:fin()
+              end))
+            i:connect(12345)
+          end)
+                
         it('data event is emitted with correct argument',function(done)
             local nc_data = 'hello world'
             i:on('data',async(function(data)
@@ -120,7 +138,6 @@ describe('The net.socket module',function()
             i:connect(12345)
             infifo:write(nc_data)
             infifo:flush()
-            
           end)
         
         
