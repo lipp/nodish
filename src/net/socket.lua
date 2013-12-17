@@ -139,6 +139,11 @@ local new = function()
     end
   end
   
+  self._transfer = function(_,s)
+    sock = s
+    on_connect()
+  end
+  
   self.write = function(_,data)
     if pending then
       pending = pending..data
@@ -242,6 +247,18 @@ local new = function()
   return self
 end
 
+local connect = function(port,ip,cb)
+  local sock = new()
+  if type(ip) == 'function' then
+    cb = ip
+  end
+  sock:once('connect',cb)
+  sock:connect(port,ip)
+  return sock
+end
+
 return {
-  new = new
+  new = new,
+  connect = connect,
+  create_connection = connect,
 }
