@@ -14,6 +14,7 @@ client:on('connect',function()
     local i = 0
     ev.Timer.new(function()
         print('writing',i)
+        i = i + 1
         client:write(tostring(i)..'\n')
       end,1,1):start(ev.Loop.default)
   end)
