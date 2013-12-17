@@ -36,7 +36,9 @@ local new = function()
   local watchers = {}
   
   local on_error = function(err)
-    self:emit('error',err)
+    if err ~= 'closed' then
+      self:emit('error',err)
+    end
     self:emit('close')
     self:destroy()
   end
@@ -47,6 +49,9 @@ local new = function()
         local data,err,part = sock:receive(8192)
         data = part or data
         if data then
+          if watchers.timer then
+            watchers.timer:again(loop)
+          end
           self:emit('data',data or part)
         end
         if err and err ~= 'timeout' then
@@ -63,11 +68,8 @@ local new = function()
     return ev.IO.new(function(loop,io)
         local sent,err,so_far = sock:send(pending,pos)
         if not sent and err ~= 'timeout' then
-          if err ~= 'closed' then
-            self:emit('error',err)
-          end
-          self:emit('close')
-          self:destroy()
+          io:stop(loop)
+          on_error(err)
         elseif sent then
           pos = nil
           pending = nil
@@ -76,6 +78,9 @@ local new = function()
           self:emit('drain')
         else
           pos = so_far + 1
+        end
+        if watchers.timer then
+          watchers.timer:again(loop)
         end
       end,sock:getfd(),ev.WRITE)
   end
@@ -186,20 +191,45 @@ local new = function()
     watchers.read:start(loop)
   end
   
-  self.set_timeout = function() end
-  self.set_keepalive = function() end
-  self.set_nodelay = function(_,enable)
-    if connecting then
-      self:once('connect',function()
-          sock:setoption('tcp-nodelay',enable)
-        end)
-    elseif connected then
-      sock:setoption('tcp-nodelay',enable)
-    else
-      self:emit('error','socket closed')
+  self.address = function()
+    if sock then
+      return sock:getsockname()
     end
-    return self
   end
+  
+  self.set_timeout = function(_,msecs,callback)
+    if msecs > 0 and type(msecs) == 'number' then
+      if watchers.timer then
+        watchers.timer:stop(loop)
+      end
+      local secs = msecs / 1000
+      watchers.timer = ev.Timer.new(function()
+          self:emit('timeout')
+        end,secs,secs)
+      watchers.timer:start(loop)
+      if callback then
+        self:once('timeout',callback)
+      end
+    else
+      watchers.timer:stop(loop)
+      if callback then
+        self:remove_listener('timeout',callback)
+      end
+    end
+  end
+  
+  self.set_keepalive = function(_,enable)
+    if sock then
+      sock:setoption('keepalive',enable)
+    end
+  end
+  
+  self.set_nodelay = function(_,enable)
+    if sock then
+      sock:setoption('tcp-nodelay',enable)
+    end
+  end
+  
   return self
 end
 
