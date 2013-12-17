@@ -1,5 +1,7 @@
 setloop('ev')
 
+local ev = require'ev'
+
 local cleanup = function()
   os.execute('killall nc 2>/dev/null')
   os.execute('rm infifo 2>/dev/null')
@@ -28,6 +30,27 @@ describe('The net.socket module',function()
     
     it('socket.new returns an object/table',function()
         assert.is_table(socket.new())
+      end)
+    
+    it('error and close events are emitted once',function(done)
+        local s = socket.new()
+        local dead_port = 16237
+        s:connect(dead_port)
+        local nerrors = 0
+        local ncloses = 0
+        s:on('error',async(function()
+              nerrors = nerrors + 1
+              s:destroy()
+          end))
+        
+        s:on('close',async(function()
+              ncloses = ncloses + 1
+          end))
+        ev.Timer.new(async(function()
+              assert.is_equal(nerrors,1)
+              assert.is_equal(ncloses,1)
+              done()
+          end),0.01):start(ev.Loop.default)
       end)
     
     describe('with an net.socket instance',function()
