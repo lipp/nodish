@@ -1,0 +1,25 @@
+language: erlang
+
+env:
+
+install:
+  - sudo apt-get install libev-dev
+  - sudo apt-get install luajit
+  - sudo apt-get install luarocks
+  - git clone git://github.com/lipp/busted.git
+  - cd busted
+  - git checkout add-finally
+  - sudo luarocks make
+  - cd ../
+  - git clone git://github.com/lipp/emitter.git
+  - cd emitter
+  - sudo luarocks make rockspecs/emitter-scm-1.rockspec
+  - cd ../
+  - git clone git://github.com/lipp/lua-ev-net.git
+  - cd lua-ev-net
+  - sudo luarocks make rockspecs/lua-ev-net-scm-1.rockspec
+  - cd ../
+  - sudo luarocks make rockspecs/lua-jet-scm-1.rockspec
+
+script: "busted spec"
+
