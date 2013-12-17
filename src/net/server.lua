@@ -25,6 +25,9 @@ local listen = function(port,host,backlog,cb)
   nexttick(function()
       self:emit('listening',self)
     end)
+  if cb then
+    self:once('listening',cb)
+  end
   local con_count = 0
   local listen_io = ev.IO.new(
     function()
@@ -33,7 +36,7 @@ local listen = function(port,host,backlog,cb)
         local s = nsocket.new()
         s:_transfer(sock)
         con_count = con_count + 1
-        self:once('close',function()
+        s:once('close',function()
             con_count = con_count - 1
             if con_count == 0 then
               self:emit('close')
