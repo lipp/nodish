@@ -117,9 +117,8 @@ describe('The net.socket module',function()
             i:connect(12345)
           end)
         
-        it('can write and drain event is emitted with 500k bytes',function(done)
-            settimeout(10)
-            local lines = 100
+        it('can write and drain event is emitted with 100k bytes',function(done)
+            local lines = 20
             local many_bytes = string.rep('hallo',1000)
             i:on('drain',async(function()
                   for x = 1,lines do
