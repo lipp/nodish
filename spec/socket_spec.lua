@@ -23,7 +23,7 @@ describe('The net.socket module',function()
         cleanup()
       end)
     
-    local socket = require'net.socket'
+    local socket = require'nodish.net.socket'
     it('provides new method',function()
         assert.is_function(socket.new)
       end)

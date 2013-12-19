@@ -2,7 +2,7 @@
 local this_dir = arg[0]:match('(.+/)[^/]+%.lua') or './'
 package.path = this_dir..'../src/'..package.path
 
-local net = require'net'
+local net = require'nodish.net'
 local ev = require'ev'
 
 local client = net.connect(12345)
