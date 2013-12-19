@@ -16,7 +16,6 @@ dependencies = {
   "lua >= 5.1",
   "luasocket",
   "lua-ev",
-  "emitter"
 }
 
 build = {
