@@ -1,5 +1,5 @@
-local socket = require'net.socket'
-local server = require'net.server'
+local socket = require'nodish.net.socket'
+local server = require'nodish.net.server'
 local ev = require'ev'
 
 local unloop = function()

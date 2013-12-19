@@ -1,6 +1,6 @@
 local socket = require'socket'
 assert(socket._VERSION:match('^LuaSocket 3%.'))
-local emitter = require'emitter'
+local emitter = require'nodish.emitter'
 local ev = require'ev'
 
 local isip = function(ip)
