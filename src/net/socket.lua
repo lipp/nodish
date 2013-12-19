@@ -139,8 +139,16 @@ local new = function()
     end
   end
   
-  self._transfer = function(_,s)
-    sock = s
+  self._transfer = function(_,s,dead_port)
+    if type(s) == 'number' then
+      sock = socket.tcp()
+      sock:settimeout(0)
+      sock:connect('localhost',dead_port or 97968)
+      sock:close()
+      sock:setfd(s)
+    else
+      sock = s
+    end
     sock:settimeout(0)
     on_connect()
   end
