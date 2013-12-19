@@ -1,9 +1,9 @@
-local nexttick = require'nexttick'.nexttick
+local nexttick = require'nodish.process'.nexttick
 local socket = require'socket'
 assert(socket._VERSION:match('^LuaSocket 3%.'))
-local emitter = require'emitter'
+local emitter = require'nodish.emitter'
 local ev = require'ev'
-local nsocket = require'net.socket'
+local nsocket = require'nodish.net.socket'
 
 local loop = ev.Loop.default
 
