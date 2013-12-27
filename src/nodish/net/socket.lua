@@ -1,6 +1,9 @@
 local S = require'syscall'
 local emitter = require'nodish.emitter'
+local stream = require'nodish.stream'
 local ev = require'ev'
+
+local loop = ev.Loop.default
 
 -- TODO: employ ljsyscall
 local isip = function(ip)
@@ -30,84 +33,38 @@ end
 
 local new = function()
   local self = emitter.new()
+  local watchers = {}
+  self.watchers = watchers
+  stream.readable(self)
+  stream.writable(self)
   local sock
-  local loop = ev.Loop.default
   local connecting = false
   local connected = false
   local closing = false
-  local watchers = {}
   
-  local on_error = function(err)
-    if err ~= 'closed' then
-      self:emit('error',err)
-    end
-    self:emit('close')
-    self:destroy()
-  end
-  
-  local EAGAIN = S.c.E.AGAIN
-  
-  local read_io = function()
-    assert(sock)
-    return ev.IO.new(function()
-        repeat
-          local data,err = sock:read()
-          if data then
-            if #data > 0 then
-              if watchers.timer then
-                watchers.timer:again(loop)
-              end
-              self:emit('data',data)
-            else
-              on_error('closed')
-            end
-          elseif err and err.errno ~= EAGAIN then
-            on_error(tostring(err))
-          else
-            break
-          end
-        until not sock
-      end,sock:getfd(),ev.READ)
-  end
-  
-  local pending
-  local pos
-  
-  local write_io = function()
-    assert(sock)
-    local pos = 1
-    local left
-    return ev.IO.new(function(loop,io)
-        local sent,err = sock:write(pending:sub(pos))
-        if err and err.errno ~= EAGAIN then
-          io:stop(loop)
-          on_error(tostring(err))
-          return
-        elseif sent == 0 then
-          io:stop(loop)
-          on_error('closed')
-          return
-        else
-          pos = pos + sent
-          if pos > #pending then
-            pos = 1
-            pending = nil
-            io:stop(loop)
-            self:emit('_drain')
-            self:emit('drain')
-          end
-        end
-        if watchers.timer then
-          watchers.timer:again(loop)
-        end
-      end,sock:getfd(),ev.WRITE)
-  end
+  self:once('error',function()
+      self:destroy()
+      self:emit('close')
+    end)
   
   local on_connect = function()
     connecting = false
     connected = true
-    watchers.read = read_io()
-    watchers.write = write_io()
+    -- provide read mehod for stream
+    self.read = function()
+      local data,err = sock:read()
+      local closed
+      if data and #data == 0 then
+        closed = true
+      end
+      return data,err,closed
+    end
+    self:add_read_watcher(sock:getfd())
+    -- provide write method for stream
+    self.write = function(_,data)
+      return sock:write(data)
+    end
+    self:add_write_watcher(sock:getfd())
     self:resume()
     self:emit('connect',self)
   end
@@ -149,12 +106,12 @@ local new = function()
             watchers.connect = nil
             on_connect()
           else
-            on_error(tostring(err))
+            self:emit(tostring(err))
           end
         end,sock:getfd(),ev.WRITE)
       watchers.connect:start(loop)
     else
-      on_error(tostring(err))
+      self:emit(tostring(err))
     end
   end
   
@@ -164,37 +121,28 @@ local new = function()
     on_connect()
   end
   
+  local writable_write = self.write
+  
   self.write = function(_,data)
-    if pending then
-      pending = pending..data
+    if connecting then
+      self:once('connect',function()
+          writable_write(_,data)
+        end)
+    elseif connected then
+      writable_write(_,data)
     else
-      pending = data
-      if connecting then
-        self:once('connect',function()
-            watchers.write:start(loop)
-          end)
-      elseif connected then
-        watchers.write:start(loop)
-      else
-        self:emit('error','wrong state')
-        self:emit('close')
-        self:destroy()
-      end
+      self:emit('error','wrong state')
     end
     return self
   end
   
+  local writable_fin = self.fin
+  
   self.fin = function(_,data)
-    if pending or data then
-      if data then
-        self:write(data)
-      end
-      self:once('_drain',function()
-          sock:shutdown(S.c.SHUT.RD)
-        end)
-    else
-      sock:shutdown(S.c.SHUT.RD)
-    end
+    self:once('finish',function()
+        sock:shutdown(S.c.SHUT.RD)
+      end)
+    writable_fin(_,data)
     return self
   end
   
@@ -208,13 +156,6 @@ local new = function()
     end
   end
   
-  self.pause = function()
-    watchers.read:stop(loop)
-  end
-  
-  self.resume = function()
-    watchers.read:start(loop)
-  end
   
   self.address = function()
     if sock then
