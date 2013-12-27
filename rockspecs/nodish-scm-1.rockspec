@@ -25,6 +25,7 @@ build = {
       ['nodish.emitter'] = 'src/nodish/emitter.lua',
       ['nodish.process'] = 'src/nodish/process.lua',
       ['nodish.net'] = 'src/nodish/net.lua',
+      ['nodish.stream'] = 'src/nodish/stream.lua',
       ['nodish.net.socket'] = 'src/nodish/net/socket.lua',
       ['nodish.net.server'] = 'src/nodish/net/server.lua',	
     }
