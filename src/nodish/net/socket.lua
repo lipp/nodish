@@ -63,6 +63,8 @@ local new = function()
             end
           elseif err and err.errno ~= EAGAIN then
             on_error(tostring(err))
+          else
+            break
           end
         until not sock
       end,sock:getfd(),ev.READ)
