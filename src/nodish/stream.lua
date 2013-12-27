@@ -8,7 +8,7 @@ local readable = function(emitter)
   self = emitter
   assert(self.watchers)
   self.add_read_watcher = function(_,fd)
-    assert(self.read)
+    assert(self._read)
     if self.watchers.read then
       return
     end
@@ -16,8 +16,7 @@ local readable = function(emitter)
     watchers.read = ev.IO.new(function(loop,io)
         self:emit('readable')
         repeat
-          local data,err,closed = self:read()
-          print(data,err,closed)
+          local data,err,closed = self:_read()
           if data then
             if #data > 0 then
               if watchers.timer then
@@ -48,6 +47,17 @@ local readable = function(emitter)
     self.watchers.read:start(loop)
   end
   
+  self.pipe = function(_,writable,auto_fin)
+    self:on('data',function(data)
+        writable:write(data)
+      end)
+    if auto_fin then
+      self:on('fin',function()
+          writable:fin()
+        end)
+    end
+  end
+  
 end
 
 local writable = function(emitter)
@@ -55,7 +65,8 @@ local writable = function(emitter)
   local pending
   local ended
   
-  self.add_write_watcher = function(_,fd,write)
+  self.add_write_watcher = function(_,fd)
+    assert(self._write)
     if self.watchers.write then
       return
     end
@@ -63,8 +74,8 @@ local writable = function(emitter)
     local left
     local watchers = self.watchers
     watchers.write = ev.IO.new(function(loop,io)
-        local written,err = write(pending:sub(pos))
-        if #written > 0 then
+        local written,err = self:_write(pending:sub(pos))
+        if written > 0 then
           pos = pos + written
           if pos > #pending then
             pos = 1
@@ -107,7 +118,6 @@ local writable = function(emitter)
     end
     ended = true
   end
-  
   
 end
 

@@ -51,7 +51,7 @@ local new = function()
     connecting = false
     connected = true
     -- provide read mehod for stream
-    self.read = function()
+    self._read = function()
       local data,err = sock:read()
       local closed
       if data and #data == 0 then
@@ -61,7 +61,7 @@ local new = function()
     end
     self:add_read_watcher(sock:getfd())
     -- provide write method for stream
-    self.write = function(_,data)
+    self._write = function(_,data)
       return sock:write(data)
     end
     self:add_write_watcher(sock:getfd())
