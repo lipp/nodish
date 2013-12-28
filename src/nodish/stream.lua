@@ -7,7 +7,7 @@ local EAGAIN = S.c.E.AGAIN
 local nexttick = require'nodish.nexttick'.nexttick
 
 local readable = function(emitter)
-  self = emitter
+  local self = emitter
   assert(self.watchers)
   self.add_read_watcher = function(_,fd)
     assert(self._read)
@@ -39,18 +39,23 @@ local readable = function(emitter)
           end
         until err
       end,fd,ev.READ)
-    nexttick(function()
-        if sock and watchers.read and not watchers.read:is_pending() then
-          watchers.read:callback()(loop,watchers.read)
-        end
-      end)
   end
   
   self.pause = function()
     self.watchers.read:stop(loop)
   end
   
+  local might_have_data
+  
   self.resume = function()
+    if not might_have_data then
+      nexttick(function()
+          if sock and watchers.read and not watchers.read:is_pending() then
+            watchers.read:callback()(loop,watchers.read)
+          end
+        end)
+      might_have_data = false
+    end
     self.watchers.read:start(loop)
   end
   
@@ -58,7 +63,7 @@ local readable = function(emitter)
     self:on('data',function(data)
         writable:write(data)
       end)
-    if auto_fin then
+    if auto_fin == nil or auto_fin == true then
       self:on('fin',function()
           writable:fin()
         end)
