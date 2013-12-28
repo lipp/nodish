@@ -17,15 +17,14 @@ Echo Server
 
 ```lua
 local net = require'nodish.net'
+local process = require'nodish.process'
 
 net.listen(12345):on('connection',function(client)
-  client:set_nodelay(true)
-  client:on('data',function(data)
-      client:write(data)
-    end)
+	client:pipe(client)
+	client:pipe(process.stdout)
   end)
 
-net.loop()    
+process.loop()    
 ```
 
 Echo Client
@@ -33,23 +32,15 @@ Echo Client
 
 ```lua
 local net = require'nodish.net'
-local ev = require'ev'
+local process = require'nodish.process'
 
 local client = net.connect(12345)
 client:on('connect',function()
-    client:set_nodelay(true)
-    client:on('data',function(data)
-        print('->',data)
-      end)
-    local i = 0
-    ev.Timer.new(function()
-        i = i + 1
-        print('<-',i)
-        client:write(tostring(i))
-      end,1,1):start(ev.Loop.default)
+	process.stdin:pipe(client)
+	client:pipe(process.stdout)
   end)
 
-net.loop()
+process.loop()
 ```
 
 
