@@ -87,7 +87,6 @@ local new = function()
   end
   
   self._connect = function(_,port,ip)
-    assert(not sock)
     --    if isipv6(ip) then
     --      sock = S.socket.tcp6()
     --    else
@@ -98,23 +97,25 @@ local new = function()
     sock:nonblock(true)
     connecting = true
     closing = false
-    local ok,err = sock:connect(addr)
-    if ok or err.errno == S.c.E.ALREADY then
+    local _,err = sock:connect(addr)
+    if not err or err.errno == S.c.E.ISCONN then
       on_connect()
     elseif err.errno == S.c.E.INPROGRESS then
       watchers.connect = ev.IO.new(function(loop,io)
           io:stop(loop)
-          local ok,err = sock:connect(addr)
-          if ok or err.errno == S.c.E.ISCONN then
+          local _,err = sock:connect(addr)
+          if not err or err.errno == S.c.E.ISCONN then
             watchers.connect = nil
             on_connect()
           else
-            self:emit(tostring(err))
+            self:emit('error',tostring(err))
           end
         end,sock:getfd(),ev.WRITE)
       watchers.connect:start(loop)
     else
-      self:emit(tostring(err))
+      nexttick(function()
+          self:emit('error',tostring(err))
+        end)
     end
   end
   
