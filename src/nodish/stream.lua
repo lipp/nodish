@@ -60,6 +60,8 @@ local readable = function(emitter)
   
 end
 
+local nexttick
+
 local writable = function(emitter)
   local self = emitter
   local pending
@@ -112,9 +114,13 @@ local writable = function(emitter)
     if data then
       self:write(data)
     elseif not pending then
-      --      process.next_tick(function()
-      self:emit('finish')
-      --      end)
+      -- TODO fix cyclic module dep
+      if not nexttick then
+        nexttick = require'nodish.process'.nexttick
+      end
+      nexttick(function()
+          self:emit('finish')
+        end)
     end
     ended = true
   end
