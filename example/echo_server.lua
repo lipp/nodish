@@ -1,4 +1,4 @@
-#!/usr/bin/env lua
+#!/usr/bin/env luajit
 local this_dir = arg[0]:match('(.+/)[^/]+%.lua') or './'
 package.path = this_dir..'../src/'..package.path
 
