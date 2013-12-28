@@ -52,6 +52,9 @@ local new = function()
     connected = true
     -- provide read mehod for stream
     self._read = function()
+      if not sock then
+        return '',nil,true
+      end
       local data,err = sock:read()
       local closed
       if data and #data == 0 then
