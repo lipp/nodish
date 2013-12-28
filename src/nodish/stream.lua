@@ -40,7 +40,7 @@ local readable = function(emitter)
         until err
       end,fd,ev.READ)
     nexttick(function()
-        if watchers.read and not watchers.read:is_pending() then
+        if sock and watchers.read and not watchers.read:is_pending() then
           watchers.read:callback()(loop,watchers.read)
         end
       end)
