@@ -3,8 +3,10 @@ language: erlang
 env:
 
 install:
+  - sudo add-apt-repository ppa:mwild1/ppa -y
+  - sudo apt-get update -y
+  - sudo apt-get install luajit -y --force-yes
   - sudo apt-get install libev-dev
-  - sudo apt-get install luajit
   - sudo apt-get install luarocks
   - git clone git://github.com/lipp/busted.git
   - cd busted
