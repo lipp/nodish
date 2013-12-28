@@ -85,7 +85,7 @@ local loop = function()
   for _,sig in ipairs({sigkill,sigint,sigquit,sighup}) do
     ev.Signal.new(
       unloop,
-    sig):start(ev.Loop.default)
+    sig):start(ev.Loop.default,true)
   end
   
   local sigpipe = 13
@@ -93,7 +93,7 @@ local loop = function()
     function()
       print('SIGPIPE ignored')
     end,
-  sigpipe):start(ev.Loop.default)
+  sigpipe):start(ev.Loop.default,true)
   
   ev.Loop.default:loop()
 end
