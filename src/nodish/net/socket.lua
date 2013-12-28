@@ -103,9 +103,9 @@ local new = function()
       on_connect()
     elseif err.errno == S.c.E.INPROGRESS then
       watchers.connect = ev.IO.new(function(loop,io)
+          io:stop(loop)
           local ok,err = sock:connect(addr)
           if ok or err.errno == S.c.E.ISCONN then
-            io:stop(loop)
             watchers.connect = nil
             on_connect()
           else
@@ -143,7 +143,9 @@ local new = function()
   
   self.fin = function(_,data)
     self:once('finish',function()
-        sock:shutdown(S.c.SHUT.RD)
+        if sock then
+          sock:shutdown(S.c.SHUT.RD)
+        end
       end)
     writable_fin(_,data)
     return self

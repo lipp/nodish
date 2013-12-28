@@ -4,6 +4,8 @@ local loop = ev.Loop.default
 
 local EAGAIN = S.c.E.AGAIN
 
+local nexttick = require'nodish.nexttick'.nexttick
+
 local readable = function(emitter)
   self = emitter
   assert(self.watchers)
@@ -37,6 +39,11 @@ local readable = function(emitter)
           end
         until err
       end,fd,ev.READ)
+    nexttick(function()
+        if watchers.read and not watchers.read:is_pending() then
+          watchers.read:callback()(loop,watchers.read)
+        end
+      end)
   end
   
   self.pause = function()
@@ -59,8 +66,6 @@ local readable = function(emitter)
   end
   
 end
-
-local nexttick
 
 local writable = function(emitter)
   local self = emitter
@@ -114,10 +119,6 @@ local writable = function(emitter)
     if data then
       self:write(data)
     elseif not pending then
-      -- TODO fix cyclic module dep
-      if not nexttick then
-        nexttick = require'nodish.process'.nexttick
-      end
       nexttick(function()
           self:emit('finish')
         end)
