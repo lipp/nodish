@@ -33,7 +33,7 @@ local create_nexttick = function(loop)
         timer_io:stop(loop)
         pcall_array(on_timeout)
         on_timeout = {}
-      end,eps)
+      end,eps,eps)
     return function(f)
       tinsert(on_timeout,f)
       if once then
