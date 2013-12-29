@@ -1,6 +1,7 @@
 local S = require'syscall'
 local emitter = require'nodish.emitter'
 local stream = require'nodish.stream'
+local nexttick = require'nodish.nexttick'.nexttick
 local ev = require'ev'
 
 local loop = ev.Loop.default
