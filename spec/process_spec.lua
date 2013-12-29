@@ -3,10 +3,6 @@ setloop('ev')
 describe('The process module',function()
     local process = require'nodish.process'
     
-    it('provides new method',function()
-        assert.is_function(process.new)
-      end)
-    
     it('provides nexttick method',function()
         assert.is_function(process.nexttick)
       end)

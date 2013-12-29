@@ -1,16 +1,14 @@
-#!/usr/bin/env lua
+#!/usr/bin/env luajit
 local this_dir = arg[0]:match('(.+/)[^/]+%.lua') or './'
 package.path = this_dir..'../src/'..package.path
 
 local net = require'nodish.net'
+local process = require'nodish.process'
 
 local server = net.listen(12345)
 server:on('connection',function(client)
-    client:set_nodelay(true)
-    client:on('data',function(data)
-        print(data)
-        client:write(data)
-      end)
+    client:pipe(client)
+    client:pipe(process.stdout)
   end)
 
-net.loop()
+process.loop()

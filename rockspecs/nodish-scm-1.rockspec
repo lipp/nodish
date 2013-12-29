@@ -14,7 +14,7 @@ description = {
 
 dependencies = {
   "lua >= 5.1",
-  "luasocket",
+  "ljsyscall",
   "lua-ev",
 }
 
@@ -24,7 +24,9 @@ build = {
     lua = {
       ['nodish.emitter'] = 'src/nodish/emitter.lua',
       ['nodish.process'] = 'src/nodish/process.lua',
+      ['nodish.nexttick'] = 'src/nodish/nexttick.lua',
       ['nodish.net'] = 'src/nodish/net.lua',
+      ['nodish.stream'] = 'src/nodish/stream.lua',
       ['nodish.net.socket'] = 'src/nodish/net/socket.lua',
       ['nodish.net.server'] = 'src/nodish/net/server.lua',	
     }

@@ -1,6 +1,5 @@
 local nexttick = require'nodish.process'.nexttick
-local socket = require'socket'
-assert(socket._VERSION:match('^LuaSocket 3%.'))
+local S = require'syscall'
 local emitter = require'nodish.emitter'
 local ev = require'ev'
 local nsocket = require'nodish.net.socket'
@@ -10,18 +9,18 @@ local loop = ev.Loop.default
 --- creates and binds a listening socket for
 -- ipv4 and (if available) ipv6.
 local sbind = function(host,port,backlog)
-  local server = socket.tcp6()
-  assert(server:setoption('ipv6-v6only',false))
-  assert(server:setoption('reuseaddr',true))
-  assert(server:bind(host,port))
-  assert(server:listen())
+  local server = S.socket('inet','stream')
+  server:nonblock(true)
+  server:setsockopt('socket','reuseaddr',true)
+  -- TODO respect host
+  server:bind(S.t.sockaddr_in(port,'127.0.0.1'))
+  server:listen(backlog)
   return server
 end
 
 local listen = function(port,host,backlog,cb)
   local self = emitter.new()
   local lsock = sbind(host or '*',port,backlog or 511)
-  lsock:settimeout(0)
   nexttick(function()
       self:emit('listening',self)
     end)
@@ -31,7 +30,8 @@ local listen = function(port,host,backlog,cb)
   local con_count = 0
   local listen_io = ev.IO.new(
     function()
-      local sock,err = lsock:accept()
+      local ss = S.types.t.sockaddr_storage()
+      local sock,err = lsock:accept()--ss,nil,'nonblock')
       if sock then
         local s = nsocket.new()
         s:_transfer(sock)
@@ -45,7 +45,7 @@ local listen = function(port,host,backlog,cb)
         self:emit('connection',s)
       else
         assert(err)
-        self:emit('error',err)
+        self:emit('error',tostring(err))
       end
     end,
     lsock:getfd(),

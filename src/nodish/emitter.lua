@@ -20,7 +20,7 @@ local new = function()
   
   self.add_listener = function(_,event,listener)
     listeners[event] = listeners[event] or {}
-    if #listeners[event] > max_listeners and max_listners ~= 0 then
+    if #listeners[event] > max_listeners and max_listeners ~= 0 then
       error('max_listeners limit reached for event '..event)
     end
     tinsert(listeners[event],listener)

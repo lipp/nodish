@@ -1,8 +1,12 @@
-local socket = require'socket'
-assert(socket._VERSION:match('^LuaSocket 3%.'))
+local S = require'syscall'
 local emitter = require'nodish.emitter'
+local stream = require'nodish.stream'
+local nexttick = require'nodish.nexttick'.nexttick
 local ev = require'ev'
 
+local loop = ev.Loop.default
+
+-- TODO: employ ljsyscall
 local isip = function(ip)
   local addrinfo,err = socket.dns.getaddrinfo(ip)
   if err then
@@ -11,6 +15,7 @@ local isip = function(ip)
   return true
 end
 
+-- TODO: employ ljsyscall
 local isipv6 = function(ip)
   local addrinfo,err = socket.dns.getaddrinfo(ip)
   if addrinfo then
@@ -22,168 +27,129 @@ local isipv6 = function(ip)
   return false
 end
 
+-- TODO: employ ljsyscall
 local isipv4 = function(ip)
   return isip(ip) and not isipv6(ip)
 end
 
 local new = function()
   local self = emitter.new()
+  local watchers = {}
+  self.watchers = watchers
+  stream.readable(self)
+  stream.writable(self)
   local sock
-  local loop = ev.Loop.default
   local connecting = false
   local connected = false
   local closing = false
-  local watchers = {}
   
-  local on_error = function(err)
-    if err ~= 'closed' then
-      self:emit('error',err)
-    end
-    self:emit('close')
-    self:destroy()
-  end
-  
-  local read_io = function()
-    assert(sock)
-    return ev.IO.new(function()
-        local data,err,part = sock:receive(8192)
-        data = part or data
-        if data then
-          if watchers.timer then
-            watchers.timer:again(loop)
-          end
-          self:emit('data',data or part)
-        end
-        if err and err ~= 'timeout' then
-          on_error(err)
-        end
-      end,sock:getfd(),ev.READ)
-  end
-  
-  local pending
-  local pos
-  
-  local write_io = function()
-    assert(sock)
-    return ev.IO.new(function(loop,io)
-        local sent,err,so_far = sock:send(pending,pos)
-        if not sent and err ~= 'timeout' then
-          io:stop(loop)
-          on_error(err)
-        elseif sent then
-          pos = nil
-          pending = nil
-          io:stop(loop)
-          self:emit('_drain')
-          self:emit('drain')
-        else
-          pos = so_far + 1
-        end
-        if watchers.timer then
-          watchers.timer:again(loop)
-        end
-      end,sock:getfd(),ev.WRITE)
-  end
+  self:once('error',function()
+      self:destroy()
+      self:emit('close')
+    end)
   
   local on_connect = function()
     connecting = false
     connected = true
-    watchers.read = read_io()
-    watchers.write = write_io()
+    -- provide read mehod for stream
+    self._read = function()
+      if not sock then
+        return '',nil,true
+      end
+      local data,err = sock:read()
+      local closed
+      if data and #data == 0 then
+        closed = true
+      end
+      return data,err,closed
+    end
+    self:add_read_watcher(sock:getfd())
+    -- provide write method for stream
+    self._write = function(_,data)
+      return sock:write(data)
+    end
+    self:add_write_watcher(sock:getfd())
     self:resume()
     self:emit('connect',self)
   end
   
   self.connect = function(_,port,ip)
     ip = ip or '127.0.0.1'
-    if not isip(ip) then
-      on_error(err)
-    end
+    --    if not isip(ip) then
+    --      on_error(err)
+    --    end
     if sock and closing then
       self:once('close',function(self)
           self:_connect(port,ip)
         end)
-      
     elseif not connecting then
       self:_connect(port,ip)
     end
   end
   
   self._connect = function(_,port,ip)
-    assert(not sock)
-    if isipv6(ip) then
-      sock = socket.tcp6()
-    else
-      sock = socket.tcp()
-    end
-    sock:settimeout(0)
+    --    if isipv6(ip) then
+    --      sock = S.socket.tcp6()
+    --    else
+    --      sock = socket.tcp()
+    --    end
+    local addr = S.types.t.sockaddr_in(port,ip)
+    sock = S.socket('inet','stream')
+    sock:nonblock(true)
     connecting = true
     closing = false
-    local ok,err = sock:connect(ip,port)
-    if ok or err == 'already connected' then
+    local _,err = sock:connect(addr)
+    if not err or err.errno == S.c.E.ISCONN then
       on_connect()
-    elseif err == 'timeout' or err == 'Operation already in progress' then
+    elseif err.errno == S.c.E.INPROGRESS then
       watchers.connect = ev.IO.new(function(loop,io)
-          local ok,err = sock:connect(ip,port)
-          if ok or err == 'already connected' then
-            io:stop(loop)
+          io:stop(loop)
+          local _,err = sock:connect(addr)
+          if not err or err.errno == S.c.E.ISCONN then
             watchers.connect = nil
             on_connect()
           else
-            on_error(err)
+            self:emit('error',tostring(err))
           end
         end,sock:getfd(),ev.WRITE)
       watchers.connect:start(loop)
     else
-      on_error(err)
+      nexttick(function()
+          self:emit('error',tostring(err))
+        end)
     end
   end
   
-  self._transfer = function(_,s,dead_port)
-    if type(s) == 'number' then
-      sock = socket.tcp()
-      sock:settimeout(0)
-      sock:connect('localhost',dead_port or 97968)
-      sock:close()
-      sock:setfd(s)
-    else
-      sock = s
-    end
-    sock:settimeout(0)
+  self._transfer = function(_,s)
+    sock = s
+    sock:nonblock(true)
     on_connect()
   end
   
+  local writable_write = self.write
+  
   self.write = function(_,data)
-    if pending then
-      pending = pending..data
+    if connecting then
+      self:once('connect',function()
+          writable_write(_,data)
+        end)
+    elseif connected then
+      writable_write(_,data)
     else
-      pending = data
-      if connecting then
-        self:once('connect',function()
-            watchers.write:start(loop)
-          end)
-      elseif connected then
-        watchers.write:start(loop)
-      else
-        self:emit('error',err)
-        self:emit('close')
-        self:destroy()
-      end
+      self:emit('error','wrong state')
     end
     return self
   end
   
+  local writable_fin = self.fin
+  
   self.fin = function(_,data)
-    if pending or data then
-      if data then
-        self:write(data)
-      end
-      self:once('_drain',function()
-          sock:shutdown('send')
-        end)
-    else
-      sock:shutdown('send')
-    end
+    self:once('finish',function()
+        if sock then
+          sock:shutdown(S.c.SHUT.RD)
+        end
+      end)
+    writable_fin(_,data)
     return self
   end
   
@@ -197,13 +163,6 @@ local new = function()
     end
   end
   
-  self.pause = function()
-    watchers.read:stop(loop)
-  end
-  
-  self.resume = function()
-    watchers.read:start(loop)
-  end
   
   self.address = function()
     if sock then
@@ -243,13 +202,14 @@ local new = function()
   
   self.set_keepalive = function(_,enable)
     if sock then
-      sock:setoption('keepalive',enable)
+      sock:setsockopt(S.c.SO.KEEPALIVE,enable)
     end
   end
   
   self.set_nodelay = function(_,enable)
     if sock then
-      sock:setoption('tcp-nodelay',enable)
+      -- TODO: employ ljsiscall
+      -- sock:setoption('tcp-nodelay',enable)
     end
   end
   
