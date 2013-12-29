@@ -138,7 +138,6 @@ describe('The net.socket module',function()
             local lines = 20
             local many_bytes = string.rep('hallo',1000)
             i:on('drain',async(function()
-                  print('drain')
                   for x = 1,lines do
                     local data = outfifo:read('*l')
                     assert.is_equal(data,many_bytes)
