@@ -5,9 +5,8 @@ A lightweight Lua equivalent to [Node.js](http://nodejs.org) [net module](http:/
 
 Unlike [luvit](http://github.com/luvit/luvit) or [LuaNode](http://github.com/ignacio/luanode) this project does try to be a complete node.js port. Instead it tries dependecies as minimal as possible to keep size small for embedded systems. The minimal required deps are:
 
-- [luasocket](http://github.com/diegonehab/luasocket)
-- [lua-ev](http://github.com/brimworks/lua-ev)
-
+- [ljsyscall](http://github.com/justincormack/ljsyscall) to interface to the system (sockets,read,write,etc)
+- [lua-ev](http://github.com/brimworks/lua-ev) as I/O loop framework
 
 Examples
 ========
