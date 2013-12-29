@@ -50,8 +50,8 @@ local readable = function(emitter)
   self.resume = function()
     if not might_have_data then
       nexttick(function()
-          if sock and watchers.read and not watchers.read:is_pending() then
-            watchers.read:callback()(loop,watchers.read)
+          if self.watchers.read and not self.watchers.read:is_pending() then
+            self.watchers.read:callback()(loop,self.watchers.read)
           end
         end)
       might_have_data = false
