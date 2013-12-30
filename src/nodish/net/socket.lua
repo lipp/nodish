@@ -51,9 +51,8 @@ local new = function()
       self:emit('close')
     end)
   
-  local onConnect = function()
-    connecting = false
-    connected = true
+  -- TODO: use metatable __index access for lazy loading
+  local addAddressesToSelf = function()
     if hasIPv6 then
       local remoteAddr = sock:getpeername()
       
@@ -73,6 +72,13 @@ local new = function()
       self.localAddress = tostring(localAddr.sin_addr)
       self.localPort = localAddr.sin_port
     end
+  end
+  
+  local onConnect = function()
+    connecting = false
+    connected = true
+    
+    addAddressesToSelf()
     
     -- provide read mehod for stream
     self._read = function()
