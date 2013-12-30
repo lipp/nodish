@@ -212,6 +212,28 @@ local new = function()
     end
   end
   
+  local daemonizeWatchers = function(daemonize)
+    for _,watcher in pairs(self.watchers) do
+      -- keep pending info, since watcher:stop also
+      -- would call watcher:clear_pending internally
+      -- with no chance of recovery
+      local revents = watcher:clear_pending()
+      watcher:stop(loop)
+      watcher:start(loop,daemonize)
+      if revents ~= 0 then
+        watcher:callback()(loop,watcher,revents)
+      end
+    end
+  end
+  
+  self.unref = function()
+    daemonizeWatchers(true)
+  end
+  
+  self.ref = function()
+    daemonizeWatchers(false)
+  end
+  
   return self
 end
 
@@ -236,6 +258,7 @@ local connect = function(...)
     sock:once('connect',connectionListener)
   end
   sock:connect(port,host)
+  return sock
 end
 
 return {
