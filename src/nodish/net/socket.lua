@@ -44,7 +44,6 @@ local new = function()
   local connecting = false
   local connected = false
   local closing = false
-  local hasIPv6 = false
   
   self:once('error',function()
       self:destroy()
@@ -53,25 +52,14 @@ local new = function()
   
   -- TODO: use metatable __index access for lazy loading
   local addAddressesToSelf = function()
-    if hasIPv6 then
-      local remoteAddr = sock:getpeername()
-      
-      self.remoteAddress = tostring(remoteAddr.sin6_addr)
-      self.remotePort = remoteAddr.sin6_port
-      
-      local localAddr = sock:getsockname()
-      self.localAddress = tostring(localAddr.sin6_addr)
-      self.localPort = localAddr.sin6_port
-    else
-      local remoteAddr = sock:getpeername()
-      
-      self.remoteAddress = tostring(remoteAddr.sin_addr)
-      self.remotePort = remoteAddr.sin_port
-      
-      local localAddr = sock:getsockname()
-      self.localAddress = tostring(localAddr.sin_addr)
-      self.localPort = localAddr.sin_port
-    end
+    local remoteAddr = sock:getpeername()
+    
+    self.remoteAddress = tostring(remoteAddr.addr)
+    self.remotePort = remoteAddr.port
+    
+    local localAddr = sock:getsockname()
+    self.localAddress = tostring(localAddr.addr)
+    self.localPort = localAddr.port
   end
   
   local onConnect = function()
@@ -121,7 +109,6 @@ local new = function()
     local addrinfo = luasocket.dns.getaddrinfo(ip)[1]
     local addr
     if addrinfo.family == 'inet6' then
-      hasIPv6 = true
       sock = S.socket('inet6','stream')
       addr = S.types.t.sockaddr_in6(port,addrinfo.addr)
     else
