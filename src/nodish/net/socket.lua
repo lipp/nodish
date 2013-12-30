@@ -199,14 +199,14 @@ local new = function()
     end
   end
   
-  self.setKeepalive = function(_,enable)
+  self.setKeepAlive = function(_,enable)
     if sock then
       sock:setsockopt(S.c.SO.KEEPALIVE,enable)
     else
     end
   end
   
-  self.setNodelay = function(_,enable)
+  self.setNoDelay = function(_,enable)
     if sock then
       sock:setoption('tcp-nodelay',enable)
     end
