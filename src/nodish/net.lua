@@ -3,6 +3,7 @@ local server = require'nodish.net.server'
 
 return {
   socket = socket,
+  Socket = socket.new,
   connect = socket.connect,
   createConnection = socket.createConnection,
   listen = server.listen,

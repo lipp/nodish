@@ -298,6 +298,7 @@ end
 
 return {
   new = new,
+  Socket = new,
   connect = connect,
   createConnection = connect,
   isIP = isIP,
