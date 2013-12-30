@@ -28,6 +28,18 @@ local stdout = function()
   return self
 end
 
+local stderr = function()
+  local self = emitter.new()
+  self.watchers = {}
+  stream.writable(self)
+  S.stderr:nonblock(true)
+  self._write = function(_,data)
+    return S.stderr:write(data)
+  end
+  self:addWriteWatcher(S.stderr:getfd())
+  return self
+end
+
 local unloop = function()
   print('quitting')
   ev.Loop.default:unloop()
@@ -58,6 +70,7 @@ return {
   nextTick = require'nodish.nexttick'.nextTick,
   stdin = stdin(),
   stdout = stdout(),
+  stderr = stderr(),
   loop = loop,
   unloop = unloop,
 }
