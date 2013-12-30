@@ -1,7 +1,7 @@
 local S = require'syscall'
 local emitter = require'nodish.emitter'
 local stream = require'nodish.stream'
-local nexttick = require'nodish.nexttick'.nexttick
+local nextTick = require'nodish.nexttick'.nextTick
 local ev = require'ev'
 
 local loop = ev.Loop.default
@@ -113,7 +113,7 @@ local new = function()
         end,sock:getfd(),ev.WRITE)
       watchers.connect:start(loop)
     else
-      nexttick(function()
+      nextTick(function()
           self:emit('error',tostring(err))
         end)
     end

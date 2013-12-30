@@ -1,4 +1,4 @@
-local nexttick = require'nodish.process'.nexttick
+local nextTick = require'nodish.process'.nextTick
 local S = require'syscall'
 local emitter = require'nodish.emitter'
 local ev = require'ev'
@@ -21,7 +21,7 @@ end
 local listen = function(port,host,backlog,cb)
   local self = emitter.new()
   local lsock = sbind(host or '*',port,backlog or 511)
-  nexttick(function()
+  nextTick(function()
       self:emit('listening',self)
     end)
   if cb then

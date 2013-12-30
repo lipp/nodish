@@ -55,7 +55,7 @@ local loop = function()
 end
 
 return {
-  nexttick = require'nodish.nexttick'.nexttick,
+  nextTick = require'nodish.nexttick'.nextTick,
   stdin = stdin(),
   stdout = stdout(),
   loop = loop,

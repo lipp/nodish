@@ -5,7 +5,7 @@ local pcallArray = function(arr)
   for _,f in ipairs(arr) do
     local ok,err = pcall(f)
     if not ok then
-      print('nexttick callback failed',err)
+      print('process.nextTick callback failed',err)
     end
   end
 end
@@ -46,5 +46,5 @@ local createNexttick = function(loop)
 end
 
 return {
-  nexttick = createNexttick(ev.Loop.default)
+  nextTick = createNexttick(ev.Loop.default)
 }

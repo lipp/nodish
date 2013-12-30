@@ -4,7 +4,7 @@ local loop = ev.Loop.default
 
 local EAGAIN = S.c.E.AGAIN
 
-local nexttick = require'nodish.nexttick'.nexttick
+local nextTick = require'nodish.nexttick'.nextTick
 
 local readable = function(emitter)
   local self = emitter
@@ -51,7 +51,7 @@ local readable = function(emitter)
   
   self.resume = function()
     if not mightHaveData then
-      nexttick(function()
+      nextTick(function()
           if self.watchers.read and not self.watchers.read:is_pending() then
             self.watchers.read:callback()(loop,self.watchers.read)
           end
@@ -128,7 +128,7 @@ local writable = function(emitter)
     if data then
       self:write(data)
     elseif not pending then
-      nexttick(function()
+      nextTick(function()
           self:emit('finish')
         end)
     end
