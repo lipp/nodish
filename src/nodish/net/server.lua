@@ -13,7 +13,7 @@ local sbind = function(host,port,backlog)
   server:nonblock(true)
   server:setsockopt('socket','reuseaddr',true)
   -- TODO respect host
-  server:bind(S.t.sockaddrIn(port,'127.0.0.1'))
+  server:bind(S.t.sockaddr_in(port,'127.0.0.1'))
   server:listen(backlog)
   return server
 end
