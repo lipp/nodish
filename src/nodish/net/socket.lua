@@ -38,7 +38,7 @@ local new = function()
   self.watchers = watchers
   stream.readable(self)
   stream.writable(self)
-  local sock
+  local sock = S.socket('inet','stream')
   local connecting = false
   local connected = false
   local closing = false
@@ -94,7 +94,6 @@ local new = function()
     --      sock = socket.tcp()
     --    end
     local addr = S.types.t.sockaddr_in(port,ip)
-    sock = S.socket('inet','stream')
     sock:nonblock(true)
     connecting = true
     closing = false
@@ -203,27 +202,40 @@ local new = function()
   self.setKeepalive = function(_,enable)
     if sock then
       sock:setsockopt(S.c.SO.KEEPALIVE,enable)
+    else
     end
   end
   
   self.setNodelay = function(_,enable)
     if sock then
-      -- TODO: employ ljsiscall
-      -- sock:setoption('tcp-nodelay',enable)
+      sock:setoption('tcp-nodelay',enable)
     end
   end
   
   return self
 end
 
-local connect = function(port,ip,cb)
-  local sock = new()
-  if type(ip) == 'function' then
-    cb = ip
+local connect = function(...)
+  local args = {...}
+  local port
+  local host
+  local connectionListener
+  if type(args[1]) == 'table' then
+    local options = args[1]
+    assert(options.port)
+    port = options.port
+    host = options.host
+    connectionListener = args[2]
+  else
+    port = args[1]
+    host = type(args[2]) == 'string' and args[2]
+    connectionListener = (type(args[2]) == 'function' and args[2]) or (type(args[3]) == 'function' and args[3])
   end
-  sock:once('connect',cb)
-  sock:connect(port,ip)
-  return sock
+  local sock = new()
+  if connectionListener then
+    sock:once('connect',connectionListener)
+  end
+  sock:connect(port,host)
 end
 
 return {
