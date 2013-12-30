@@ -3,12 +3,14 @@ local emitter = require'nodish.emitter'
 local stream = require'nodish.stream'
 local nextTick = require'nodish.nexttick'.nextTick
 local ev = require'ev'
+--TODO make dns without luasocket
+local luasocket = require'socket'
 
 local loop = ev.Loop.default
 
 -- TODO: employ ljsyscall
-local isip = function(ip)
-  local addrinfo,err = socket.dns.getaddrinfo(ip)
+local isIP = function(ip)
+  local addrinfo,err = luasocket.dns.getaddrinfo(ip)
   if err then
     return false
   end
@@ -16,8 +18,8 @@ local isip = function(ip)
 end
 
 -- TODO: employ ljsyscall
-local isipv6 = function(ip)
-  local addrinfo,err = socket.dns.getaddrinfo(ip)
+local isIPv6 = function(ip)
+  local addrinfo,err = luasocket.dns.getaddrinfo(ip)
   if addrinfo then
     assert(#addrinfo > 0)
     if addrinfo[1].family == 'inet6' then
@@ -28,8 +30,8 @@ local isipv6 = function(ip)
 end
 
 -- TODO: employ ljsyscall
-local isipv4 = function(ip)
-  return isip(ip) and not isipv6(ip)
+local isIPv4 = function(ip)
+  return isIP(ip) and not isIPv6(ip)
 end
 
 local new = function()
@@ -38,10 +40,11 @@ local new = function()
   self.watchers = watchers
   stream.readable(self)
   stream.writable(self)
-  local sock = S.socket('inet','stream')
+  local sock = nil
   local connecting = false
   local connected = false
   local closing = false
+  local hasIPv6 = false
   
   self:once('error',function()
       self:destroy()
@@ -51,13 +54,25 @@ local new = function()
   local onConnect = function()
     connecting = false
     connected = true
-    local remoteAddr = sock:getpeername()
-    self.remoteAddress = tostring(remoteAddr.sin_addr)
-    self.remotePort = remoteAddr.sin_port
-    
-    local localAddr = sock:getsockname()
-    self.remoteAddress = tostring(remoteAddr.sin_addr)
-    self.remotePort = remoteAddr.sin_port
+    if hasIPv6 then
+      local remoteAddr = sock:getpeername()
+      
+      self.remoteAddress = tostring(remoteAddr.sin6_addr)
+      self.remotePort = remoteAddr.sin6_port
+      
+      local localAddr = sock:getsockname()
+      self.localAddress = tostring(localAddr.sin6_addr)
+      self.localPort = localAddr.sin6_port
+    else
+      local remoteAddr = sock:getpeername()
+      
+      self.remoteAddress = tostring(remoteAddr.sin_addr)
+      self.remotePort = remoteAddr.sin_port
+      
+      local localAddr = sock:getsockname()
+      self.localAddress = tostring(localAddr.sin_addr)
+      self.localPort = localAddr.sin_port
+    end
     
     -- provide read mehod for stream
     self._read = function()
@@ -83,9 +98,9 @@ local new = function()
   
   self.connect = function(_,port,ip)
     ip = ip or '127.0.0.1'
-    --    if not isip(ip) then
-    --      onError(err)
-    --    end
+    if not isIP(ip) then
+      onError(err)
+    end
     if sock and closing then
       self:once('close',function(self)
           self:_connect(port,ip)
@@ -96,12 +111,17 @@ local new = function()
   end
   
   self._connect = function(_,port,ip)
-    --    if isipv6(ip) then
-    --      sock = S.socket.tcp6()
-    --    else
-    --      sock = socket.tcp()
-    --    end
-    local addr = S.types.t.sockaddr_in(port,ip)
+    --TODO make dns without luasocket
+    local addrinfo = luasocket.dns.getaddrinfo(ip)[1]
+    local addr
+    if addrinfo.family == 'inet6' then
+      hasIPv6 = true
+      sock = S.socket('inet6','stream')
+      addr = S.types.t.sockaddr_in6(port,addrinfo.addr)
+    else
+      sock = S.socket('inet','stream')
+      addr = S.types.t.sockaddr_in(port,addrinfo.addr)
+    end
     sock:nonblock(true)
     connecting = true
     closing = false
@@ -274,4 +294,7 @@ return {
   new = new,
   connect = connect,
   createConnection = connect,
+  isIP = isIP,
+  isIPv4 = isIPv4,
+  isIPv6 = isIPv6,
 }
