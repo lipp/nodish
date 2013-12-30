@@ -192,9 +192,9 @@ local new = function()
     if sock then
       local addr = sock:getsockname()
       local resObj = {
-        address = tostring(addr.sin_addr),
-        port = addr.sin_port,
-        family = family[addr.sin_family],
+        address = tostring(addr.addr),
+        port = addr.port,
+        family = family[addr.family],
       }
       return resObj
     end
