@@ -51,6 +51,9 @@ local new = function()
   local onConnect = function()
     connecting = false
     connected = true
+    local addr = sock:getpeername()
+    self.remoteAddress = tostring(addr.sin_addr)
+    self.remotePort = addr.sin_port
     -- provide read mehod for stream
     self._read = function()
       if not sock then
