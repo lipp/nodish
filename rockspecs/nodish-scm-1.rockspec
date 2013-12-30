@@ -16,6 +16,7 @@ dependencies = {
   "lua >= 5.1",
   "ljsyscall",
   "lua-ev",
+  "luasocket",
 }
 
 build = {
