@@ -13,7 +13,7 @@ local sbind = function(host,port,backlog)
   server:nonblock(true)
   server:setsockopt('socket','reuseaddr',true)
   -- TODO respect host
-  server:bind(S.t.sockaddr_in(port,'127.0.0.1'))
+  server:bind(S.t.sockaddrIn(port,'127.0.0.1'))
   server:listen(backlog)
   return server
 end
@@ -27,18 +27,18 @@ local listen = function(port,host,backlog,cb)
   if cb then
     self:once('listening',cb)
   end
-  local con_count = 0
-  local listen_io = ev.IO.new(
+  local conCount = 0
+  local listenIo = ev.IO.new(
     function()
       local ss = S.types.t.sockaddr_storage()
       local sock,err = lsock:accept()--ss,nil,'nonblock')
       if sock then
         local s = nsocket.new()
         s:_transfer(sock)
-        con_count = con_count + 1
+        conCount = conCount + 1
         s:once('close',function()
-            con_count = con_count - 1
-            if con_count == 0 then
+            conCount = conCount - 1
+            if conCount == 0 then
               self:emit('close')
             end
           end)
@@ -50,15 +50,15 @@ local listen = function(port,host,backlog,cb)
     end,
     lsock:getfd(),
   ev.READ)
-  listen_io:start(loop)
+  listenIo:start(loop)
   
   self.close = function(_,cb)
-    listen_io:stop(loop)
+    listenIo:stop(loop)
     lsock:close()
     if cb then
       self:once('close',cb)
     end
-    if con_count == 0 then
+    if conCount == 0 then
       self:emit('close')
     end
   end

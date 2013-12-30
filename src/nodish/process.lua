@@ -12,7 +12,7 @@ local stdin = function()
   self._read = function()
     return S.stdin:read()
   end
-  self:add_read_watcher(S.stdin:getfd())
+  self:addReadWatcher(S.stdin:getfd())
   return self
 end
 
@@ -24,7 +24,7 @@ local stdout = function()
   self._write = function(_,data)
     return S.stdout:write(data)
   end
-  self:add_write_watcher(S.stdout:getfd())
+  self:addWriteWatcher(S.stdout:getfd())
   return self
 end
 

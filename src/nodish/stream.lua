@@ -9,7 +9,7 @@ local nexttick = require'nodish.nexttick'.nexttick
 local readable = function(emitter)
   local self = emitter
   assert(self.watchers)
-  self.add_read_watcher = function(_,fd)
+  self.addReadWatcher = function(_,fd)
     assert(self._read)
     if self.watchers.read then
       return
@@ -45,25 +45,25 @@ local readable = function(emitter)
     self.watchers.read:stop(loop)
   end
   
-  local might_have_data
+  local mightHaveData
   
   self.resume = function()
-    if not might_have_data then
+    if not mightHaveData then
       nexttick(function()
           if self.watchers.read and not self.watchers.read:is_pending() then
             self.watchers.read:callback()(loop,self.watchers.read)
           end
         end)
-      might_have_data = false
+      mightHaveData = false
     end
     self.watchers.read:start(loop)
   end
   
-  self.pipe = function(_,writable,auto_fin)
+  self.pipe = function(_,writable,autoFin)
     self:on('data',function(data)
         writable:write(data)
       end)
-    if auto_fin == nil or auto_fin == true then
+    if autoFin == nil or autoFin == true then
       self:on('fin',function()
           writable:fin()
         end)
@@ -77,7 +77,7 @@ local writable = function(emitter)
   local pending
   local ended
   
-  self.add_write_watcher = function(_,fd)
+  self.addWriteWatcher = function(_,fd)
     assert(self._write)
     if self.watchers.write then
       return

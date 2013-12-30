@@ -1,7 +1,7 @@
 local ev = require'ev'
 local tinsert = table.insert
 
-local pcall_array = function(arr)
+local pcallArray = function(arr)
   for _,f in ipairs(arr) do
     local ok,err = pcall(f)
     if not ok then
@@ -10,41 +10,41 @@ local pcall_array = function(arr)
   end
 end
 
-local create_nexttick = function(loop)
+local createNexttick = function(loop)
   if ev.Idle then
-    local on_idle = {}
-    local idle_io = ev.Idle.new(
-      function(loop,idle_io)
-        idle_io:stop(loop)
-        pcall_array(on_idle)
-        on_idle = {}
+    local onIdle = {}
+    local idleIo = ev.Idle.new(
+      function(loop,idleIo)
+        idleIo:stop(loop)
+        pcallArray(onIdle)
+        onIdle = {}
       end)
     return function(f)
-      tinsert(on_idle,f)
-      idle_io:start(loop)
+      tinsert(onIdle,f)
+      idleIo:start(loop)
     end
   else
     local eps = 2^-40
     local once
-    local on_timeout = {}
-    local timer_io = ev.Timer.new(
-      function(loop,timer_io)
+    local onTimeout = {}
+    local timerIo = ev.Timer.new(
+      function(loop,timerIo)
         once = true
-        timer_io:stop(loop)
-        pcall_array(on_timeout)
-        on_timeout = {}
+        timerIo:stop(loop)
+        pcallArray(onTimeout)
+        onTimeout = {}
       end,eps,eps)
     return function(f)
-      tinsert(on_timeout,f)
+      tinsert(onTimeout,f)
       if once then
-        timer_io:again(loop)
+        timerIo:again(loop)
       else
-        timer_io:start(loop)
+        timerIo:start(loop)
       end
     end
   end
 end
 
 return {
-  nexttick = create_nexttick(ev.Loop.default)
+  nexttick = createNexttick(ev.Loop.default)
 }

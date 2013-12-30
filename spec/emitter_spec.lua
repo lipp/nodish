@@ -14,22 +14,22 @@ describe('The emitter module',function()
             i = emitter.new()
           end)
         
-        local expected_methods = {
-          'add_listener',
+        local expectedMethods = {
+          'addListener',
           'on',
           'once',
-          'remove_listener',
+          'removeListener',
           'emit',
         }
         
-        for _,method in ipairs(expected_methods) do
+        for _,method in ipairs(expectedMethods) do
           it('i.'..method..' is function',function()
               assert.is_function(i[method])
             end)
         end
         
-        it('i.add_listener and i.on are the same method',function()
-            assert.is_equal(i.add_listener,i.on)
+        it('i.addListener and i.on are the same method',function()
+            assert.is_equal(i.addListener,i.on)
           end)
         
         it('i.on callback gets called with correct arguments',function(done)
@@ -72,19 +72,19 @@ describe('The emitter module',function()
         
         it('once can be canceled',function(done)
             local entered
-            local once_cb = async(function()
+            local onceCb = async(function()
                 entered = true
               end)
-            i:once('bar',once_cb)
+            i:once('bar',onceCb)
             i:on('bar',async(function()
                   assert.is_nil(entered)
                   done()
               end))
-            i:remove_listener('bar',once_cb)
+            i:removeListener('bar',onceCb)
             i:emit('bar')
           end)
         
-        it('remove_all_listeners works for a specific event',function(done)
+        it('removeAllListeners works for a specific event',function(done)
             local entered = 0
             i:on('foo',async(function()
                   entered = entered + 1
@@ -96,12 +96,12 @@ describe('The emitter module',function()
                   assert.is_equal(entered,0)
                   done()
               end))
-            i:remove_all_listeners('foo')
+            i:removeAllListeners('foo')
             i:emit('foo')
             i:emit('bar')
           end)
         
-        it('remove_all_listeners works for all events',function(done)
+        it('removeAllListeners works for all events',function(done)
             local entered = 0
             i:on('foo',async(function()
                   entered = entered + 1
@@ -113,7 +113,7 @@ describe('The emitter module',function()
                   entered = entered + 1
                   --                  done()
               end))
-            i:remove_all_listeners()
+            i:removeAllListeners()
             i:emit('foo')
             i:emit('bar')
             assert.is_equal(entered,0)

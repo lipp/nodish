@@ -76,13 +76,13 @@ describe('The net.socket module',function()
           'destroy',
           'pause',
           'resume',
-          'set_timeout',
-          'set_nodelay',
-          'set_keepalive',
+          'setTimeout',
+          'setNodelay',
+          'setKeepalive',
           'on',
           'once',
-          'add_listener',
-          'remove_listener',
+          'addListener',
+          'removeListener',
         }
         
         for _,method in ipairs(expected_methods) do

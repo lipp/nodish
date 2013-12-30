@@ -48,7 +48,7 @@ local new = function()
       self:emit('close')
     end)
   
-  local on_connect = function()
+  local onConnect = function()
     connecting = false
     connected = true
     -- provide read mehod for stream
@@ -63,12 +63,12 @@ local new = function()
       end
       return data,err,closed
     end
-    self:add_read_watcher(sock:getfd())
+    self:addReadWatcher(sock:getfd())
     -- provide write method for stream
     self._write = function(_,data)
       return sock:write(data)
     end
-    self:add_write_watcher(sock:getfd())
+    self:addWriteWatcher(sock:getfd())
     self:resume()
     self:emit('connect',self)
   end
@@ -76,18 +76,18 @@ local new = function()
   self.connect = function(_,port,ip)
     ip = ip or '127.0.0.1'
     --    if not isip(ip) then
-    --      on_error(err)
+    --      onError(err)
     --    end
     if sock and closing then
       self:once('close',function(self)
-          self:_connect(port,ip)
+          self:Connect(port,ip)
         end)
     elseif not connecting then
-      self:_connect(port,ip)
+      self:Connect(port,ip)
     end
   end
   
-  self._connect = function(_,port,ip)
+  self.Connect = function(_,port,ip)
     --    if isipv6(ip) then
     --      sock = S.socket.tcp6()
     --    else
@@ -100,14 +100,14 @@ local new = function()
     closing = false
     local _,err = sock:connect(addr)
     if not err or err.errno == S.c.E.ISCONN then
-      on_connect()
+      onConnect()
     elseif err.errno == S.c.E.INPROGRESS then
       watchers.connect = ev.IO.new(function(loop,io)
           io:stop(loop)
           local _,err = sock:connect(addr)
           if not err or err.errno == S.c.E.ISCONN then
             watchers.connect = nil
-            on_connect()
+            onConnect()
           else
             self:emit('error',tostring(err))
           end
@@ -123,25 +123,25 @@ local new = function()
   self._transfer = function(_,s)
     sock = s
     sock:nonblock(true)
-    on_connect()
+    onConnect()
   end
   
-  local writable_write = self.write
+  local writableWrite = self.write
   
   self.write = function(_,data)
     if connecting then
       self:once('connect',function()
-          writable_write(_,data)
+          writableWrite(_,data)
         end)
     elseif connected then
-      writable_write(_,data)
+      writableWrite(_,data)
     else
       self:emit('error','wrong state')
     end
     return self
   end
   
-  local writable_fin = self.fin
+  local writableFin = self.fin
   
   self.fin = function(_,data)
     self:once('finish',function()
@@ -149,7 +149,7 @@ local new = function()
           sock:shutdown(S.c.SHUT.RD)
         end
       end)
-    writable_fin(_,data)
+    writableFin(_,data)
     return self
   end
   
@@ -168,18 +168,18 @@ local new = function()
     if sock then
       local res = {sock:getsockname()}
       if #res == 3 then
-        local res_obj = {
+        local resObj = {
           address = res[1],
           port = tonumber(res[2]),
           family = res[3] == 'inet' and 'ipv4' or 'ipv6',
         }
-        return res_obj
+        return resObj
       end
       return
     end
   end
   
-  self.set_timeout = function(_,msecs,callback)
+  self.setTimeout = function(_,msecs,callback)
     if msecs > 0 and type(msecs) == 'number' then
       if watchers.timer then
         watchers.timer:stop(loop)
@@ -195,18 +195,18 @@ local new = function()
     else
       watchers.timer:stop(loop)
       if callback then
-        self:remove_listener('timeout',callback)
+        self:removeListener('timeout',callback)
       end
     end
   end
   
-  self.set_keepalive = function(_,enable)
+  self.setKeepalive = function(_,enable)
     if sock then
       sock:setsockopt(S.c.SO.KEEPALIVE,enable)
     end
   end
   
-  self.set_nodelay = function(_,enable)
+  self.setNodelay = function(_,enable)
     if sock then
       -- TODO: employ ljsiscall
       -- sock:setoption('tcp-nodelay',enable)
@@ -229,5 +229,5 @@ end
 return {
   new = new,
   connect = connect,
-  create_connection = connect,
+  createConnection = connect,
 }
