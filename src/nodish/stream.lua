@@ -8,6 +8,7 @@ local nexttick = require'nodish.nexttick'.nexttick
 
 local readable = function(emitter)
   local self = emitter
+  self.bytesRead = 0
   assert(self.watchers)
   self.addReadWatcher = function(_,fd)
     assert(self._read)
@@ -21,6 +22,7 @@ local readable = function(emitter)
           local data,err,closed = self:_read()
           if data then
             if #data > 0 then
+              self.bytesRead = self.bytesRead + #data
               if watchers.timer then
                 watchers.timer:again(loop)
               end
@@ -74,6 +76,7 @@ end
 
 local writable = function(emitter)
   local self = emitter
+  self.bytesWritten = 0
   local pending
   local ended
   
@@ -88,6 +91,7 @@ local writable = function(emitter)
     watchers.write = ev.IO.new(function(loop,io)
         local written,err = self:_write(pending:sub(pos))
         if written > 0 then
+          self.bytesWritten = self.bytesWritten + written
           pos = pos + written
           if pos > #pending then
             pos = 1
