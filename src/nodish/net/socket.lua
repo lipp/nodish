@@ -80,14 +80,14 @@ local new = function()
     --    end
     if sock and closing then
       self:once('close',function(self)
-          self:Connect(port,ip)
+          self:_connect(port,ip)
         end)
     elseif not connecting then
-      self:Connect(port,ip)
+      self:_connect(port,ip)
     end
   end
   
-  self.Connect = function(_,port,ip)
+  self._connect = function(_,port,ip)
     --    if isipv6(ip) then
     --      sock = S.socket.tcp6()
     --    else
