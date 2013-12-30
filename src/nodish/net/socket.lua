@@ -162,19 +162,20 @@ local new = function()
     end
   end
   
+  local family = {
+    [S.c.AF.INET] = 'IPv4',
+    [S.c.AF.INET6] = 'IPv6',
+  }
   
   self.address = function()
     if sock then
-      local res = {sock:getsockname()}
-      if #res == 3 then
-        local resObj = {
-          address = res[1],
-          port = tonumber(res[2]),
-          family = res[3] == 'inet' and 'ipv4' or 'ipv6',
-        }
-        return resObj
-      end
-      return
+      local addr = sock:getsockname()
+      local resObj = {
+        address = tostring(addr.sin_addr),
+        port = addr.sin_port,
+        family = family[addr.sin_family],
+      }
+      return resObj
     end
   end
   
