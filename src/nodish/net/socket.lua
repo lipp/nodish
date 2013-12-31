@@ -3,6 +3,7 @@ local emitter = require'nodish.emitter'
 local stream = require'nodish.stream'
 local nextTick = require'nodish.nexttick'.nextTick
 local ev = require'ev'
+local ffi = require'ffi'
 --TODO make dns without luasocket
 local luasocket = require'socket'
 
@@ -67,16 +68,23 @@ local new = function()
     connected = true
     
     addAddressesToSelf()
-    
+    local chunkSize = 4096*20 -- about 100k
+    local buf = S.t.buffer(chunkSize)
     -- provide read mehod for stream
     self._read = function()
       if not sock then
         return '',nil,true
       end
-      local data,err = sock:read()
+      local ret,err = sock:read(buf,chunkSize)
       local closed
-      if data and #data == 0 then
-        closed = true
+      local data
+      if ret then
+        if ret > 0 then
+          data = ffi.string(buf,ret)
+        elseif ret == 0 then
+          closed = true
+          data = ''
+        end
       end
       return data,err,closed
     end
