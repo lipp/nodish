@@ -19,7 +19,7 @@ local readable = function(emitter)
     watchers.read = ev.IO.new(function(loop,io)
         self:emit('readable')
         repeat
-          local data,err,closed = self:_read()
+          local data,err = self:_read()
           if data then
             if #data > 0 then
               self.bytesRead = self.bytesRead + #data
@@ -29,9 +29,6 @@ local readable = function(emitter)
               self:emit('data',data)
             else
               self:emit('fin')
-              if closed then
-                self:emit('close')
-              end
               io:stop(loop)
               return
             end
@@ -113,7 +110,10 @@ local writable = function(emitter)
       end,fd,ev.WRITE)
   end
   
-  self.write = function(_,data)
+  
+  --may be overwritten by 'subclass/implementors'
+  -- save for usage in fin
+  local write = function(_,data)
     if pending then
       pending = pending..data
     elseif ended then
@@ -124,9 +124,11 @@ local writable = function(emitter)
     end
   end
   
+  self.write = write
+  
   self.fin = function(_,data)
     if data then
-      self:write(data)
+      write(self,data)
     elseif not pending then
       nextTick(function()
           self:emit('finish')
