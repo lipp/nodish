@@ -2,6 +2,7 @@ local S = require'syscall'
 local emitter = require'nodish.emitter'
 local stream = require'nodish.stream'
 local nextTick = require'nodish.nexttick'.nextTick
+local util = require'nodish._util'
 local ev = require'ev'
 local ffi = require'ffi'
 --TODO make dns without luasocket
@@ -276,26 +277,16 @@ local new = function(options)
     end
   end
   
-  local daemonizeWatchers = function(daemonize)
+  self.unref = function()
     for _,watcher in pairs(self.watchers) do
-      -- keep pending info, since watcher:stop also
-      -- would call watcher:clear_pending internally
-      -- with no chance of recovery
-      local revents = watcher:clear_pending()
-      watcher:stop(loop)
-      watcher:start(loop,daemonize)
-      if revents ~= 0 then
-        watcher:callback()(loop,watcher,revents)
-      end
+      util.unref(watcher)
     end
   end
   
-  self.unref = function()
-    daemonizeWatchers(true)
-  end
-  
   self.ref = function()
-    daemonizeWatchers(false)
+    for _,watcher in pairs(self.watchers) do
+      util.ref(watcher)
+    end
   end
   
   return self

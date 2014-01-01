@@ -3,6 +3,7 @@ local S = require'syscall'
 local emitter = require'nodish.emitter'
 local ev = require'ev'
 local nsocket = require'nodish.net.socket'
+local util = require'nodish._util'
 
 local loop = ev.Loop.default
 
@@ -52,6 +53,14 @@ local listen = function(port,host,backlog,cb)
     lsock:getfd(),
   ev.READ)
   listenIo:start(loop)
+  
+  self.unref = function()
+    util.unref(listenIo)
+  end
+  
+  self.ref = function()
+    util.ref(listenIo)
+  end
   
   self.close = function(_,cb)
     listenIo:stop(loop)
