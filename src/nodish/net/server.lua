@@ -33,8 +33,9 @@ local listen = function(port,host,backlog,cb)
       local ss = S.types.t.sockaddr_storage()
       local sock,err = lsock:accept()--ss,nil,'nonblock')
       if sock then
-        local s = nsocket.new()
-        s:_transfer(sock)
+        local s = nsocket.new({
+            fd = sock,
+        })
         conCount = conCount + 1
         s:once('close',function()
             conCount = conCount - 1
