@@ -35,21 +35,48 @@ local isIPv4 = function(ip)
   return isIP(ip) and not isIPv6(ip)
 end
 
-local new = function()
+local new = function(options)
+  options = options or {}
+  local readable = options.readable or true
+  local writable = options.writable or true
+  local allowHalfOpen = options.allowHalfOpen or false
+  local sock = options.fd or nil
   local self = emitter.new()
   local watchers = {}
   self.watchers = watchers
-  stream.readable(self)
-  stream.writable(self)
-  local sock = nil
+  
+  if readable then
+    stream.readable(self)
+  end
+  
+  if writable then
+    stream.writable(self)
+  end
+  
   local connecting = false
   local connected = false
   local closing = false
   
   self:once('error',function()
       self:destroy()
-      self:emit('close')
     end)
+  
+  if readable then
+    self:once('fin',function()
+        if not allowHalfOpen then
+          -- socket.fin has not been called yet
+          if writable then
+            self:once('finish',function()
+                self:destroy()
+              end)
+            
+            self:fin()
+          else
+            self:destroy()
+          end
+        end
+      end)
+  end
   
   -- TODO: use metatable __index access for lazy loading
   local addAddressesToSelf = function()
@@ -68,34 +95,38 @@ local new = function()
     connected = true
     
     addAddressesToSelf()
-    local chunkSize = 4096*20 -- about 100k
-    local buf = S.t.buffer(chunkSize)
-    -- provide read mehod for stream
-    self._read = function()
-      if not sock then
-        return '',nil,true
-      end
-      local ret,err = sock:read(buf,chunkSize)
-      local closed
-      local data
-      if ret then
-        if ret > 0 then
-          data = ffi.string(buf,ret)
-        elseif ret == 0 then
-          closed = true
-          data = ''
+    if readable then
+      local chunkSize = 4096*20 -- about 100k
+      local buf = S.t.buffer(chunkSize)
+      -- provide read mehod for stream
+      self._read = function()
+        if not sock then
+          return '',nil,true
         end
+        local ret,err = sock:read(buf,chunkSize)
+        local data
+        if ret then
+          data = ffi.string(buf,ret)
+        end
+        return data,err
       end
-      return data,err,closed
+      self:addReadWatcher(sock:getfd())
+      self:resume()
     end
-    self:addReadWatcher(sock:getfd())
-    -- provide write method for stream
-    self._write = function(_,data)
-      return sock:write(data)
+    
+    if writable then
+      -- provide write method for stream
+      self._write = function(_,data)
+        return sock:write(data)
+      end
+      self:addWriteWatcher(sock:getfd())
     end
-    self:addWriteWatcher(sock:getfd())
-    self:resume()
     self:emit('connect',self)
+  end
+  
+  if sock then
+    sock:nonblock(true)
+    onConnect()
   end
   
   self.connect = function(_,port,ip)
@@ -148,23 +179,19 @@ local new = function()
     end
   end
   
-  self._transfer = function(_,s)
-    sock = s
-    sock:nonblock(true)
-    onConnect()
-  end
-  
   local writableWrite = self.write
   
   self.write = function(_,data)
+    if not writable then
+      error('socket is not writable')
+    end
     if connecting then
       self:once('connect',function()
           writableWrite(_,data)
         end)
-    elseif connected then
-      writableWrite(_,data)
     else
-      self:emit('error','wrong state')
+      assert(connected)
+      writableWrite(_,data)
     end
     return self
   end
@@ -172,9 +199,13 @@ local new = function()
   local writableFin = self.fin
   
   self.fin = function(_,data)
+    if not writable then
+      return
+    end
+    writable = false
     self:once('finish',function()
         if sock then
-          sock:shutdown(S.c.SHUT.RD)
+          sock:shutdown(S.c.SHUT.WR)
         end
       end)
     writableFin(_,data)
@@ -182,12 +213,15 @@ local new = function()
   end
   
   self.destroy = function()
+    writable = false
+    readable = false
     for _,watcher in pairs(watchers) do
       watcher:stop(loop)
     end
     if sock then
       sock:close()
       sock = nil
+      self:emit('close')
     end
   end
   
