@@ -58,8 +58,9 @@ local new = function(options)
   local connected = false
   local closing = false
   
-  self:once('error',function()
-      self:destroy()
+  self:once('error',function(err)
+      local hadError = err and true
+      self:destroy(hadError)
     end)
   
   if readable then
@@ -213,7 +214,7 @@ local new = function(options)
     return self
   end
   
-  self.destroy = function()
+  self.destroy = function(_,hadError)
     writable = false
     readable = false
     for _,watcher in pairs(watchers) do
@@ -222,7 +223,7 @@ local new = function(options)
     if sock then
       sock:close()
       sock = nil
-      self:emit('close')
+      self:emit('close',hadError)
     end
   end
   
