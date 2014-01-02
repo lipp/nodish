@@ -1,17 +1,34 @@
 local S = require'syscall'
 local ffi = require'ffi'
 
+if ffi.os == 'OSX' then  
+  ffi.cdef[[
+  struct addrinfo {
+    int             ai_flags;
+    int             ai_family;
+    int             ai_socktype;
+    int             ai_protocol;
+    socklen_t          ai_addrlen;
+    char            *ai_canonname;
+    struct sockaddr  *ai_addr;
+    struct addrinfo  *ai_next;
+  };
+  ]]
+else
+  ffi.cdef[[
+  struct addrinfo {
+    int             ai_flags;
+    int             ai_family;
+    int             ai_socktype;
+    int             ai_protocol;
+    socklen_t          ai_addrlen;
+    struct sockaddr  *ai_addr;
+    char            *ai_canonname;
+    struct addrinfo  *ai_next;
+  };
+  ]]
+end
 ffi.cdef[[
-struct addrinfo {
-  int             ai_flags;
-  int             ai_family;
-  int             ai_socktype;
-  int             ai_protocol;
-  socklen_t          ai_addrlen;
-  char            *ai_canonname;
-  struct sockaddr  *ai_addr;
-  struct addrinfo  *ai_next;
-};
 int getaddrinfo(const char *hostname, const char *servname, const struct addrinfo *hints, struct addrinfo **res);
 void
 freeaddrinfo(struct addrinfo *ai);
