@@ -6,7 +6,7 @@ return {
   Socket = socket.new,
   connect = socket.connect,
   createConnection = socket.createConnection,
-  listen = server.listen,
+  createServer = server.createServer,
   isIP = socket.isIP,
   isIPv4 = socket.isIPv4,
   isIPv6 = socket.isIPv6,

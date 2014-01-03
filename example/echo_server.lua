@@ -5,10 +5,9 @@ package.path = this_dir..'../src/'..package.path
 local net = require'nodish.net'
 local process = require'nodish.process'
 
-local server = net.listen(12345)
-server:on('connection',function(client)
+net.createServer(function(client)
     client:pipe(client)
     client:pipe(process.stdout)
-  end)
+  end).listen(12345)
 
 process.loop()
