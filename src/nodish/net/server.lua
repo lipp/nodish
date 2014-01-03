@@ -16,7 +16,7 @@ local inaddr = function(port,addr)
   local inaddr = S.t.sockaddr_in()
   inaddr.family = S.c.AF.INET
   inaddr.port = port
-  if host then
+  if addr then
     inaddr.addr = addr
   else
     inaddr.sin_addr.s_addr = INADDR_ANY--h.htonl(INADDR_ANY)
