@@ -5,18 +5,13 @@ local nextTick = require'nodish.nexttick'.nextTick
 local util = require'nodish._util'
 local ev = require'ev'
 local ffi = require'ffi'
---TODO make dns without luasocket
-local luasocket = require'socket'
+local dns = require'nodish.dns'
 
 local loop = ev.Loop.default
 
 -- TODO: employ ljsyscall
 local isIP = function(ip)
-  local addrinfo,err = luasocket.dns.getaddrinfo(ip)
-  if err then
-    return false
-  end
-  return true
+  return dns.getaddrinfo(ip)
 end
 
 -- TODO: employ ljsyscall
@@ -24,7 +19,7 @@ local isIPv6 = function(ip)
   local addrinfo,err = luasocket.dns.getaddrinfo(ip)
   if addrinfo then
     assert(#addrinfo > 0)
-    if addrinfo[1].family == 'inet6' then
+    if addrinfo[1].family == 'IPv6' then
       return true
     end
   end
@@ -146,10 +141,9 @@ local new = function(options)
   end
   
   self._connect = function(_,port,ip)
-    --TODO make dns without luasocket
-    local addrinfo = luasocket.dns.getaddrinfo(ip)[1]
+    local addrinfo = dns.getaddrinfo(ip)[1]
     local addr
-    if addrinfo.family == 'inet6' then
+    if addrinfo.family == 'IPv6' then
       sock = S.socket('inet6','stream')
       addr = S.types.t.sockaddr_in6(port,addrinfo.addr)
     else

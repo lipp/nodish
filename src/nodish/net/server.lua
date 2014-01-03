@@ -62,6 +62,18 @@ local listen = function(port,host,backlog,cb)
     util.ref(listenIo)
   end
   
+  self.address = function()
+    if lsock then
+      local addr = lsock:getsockname()
+      local resObj = {
+        address = tostring(addr.addr),
+        port = addr.port,
+        family = family[addr.family],
+      }
+      return resObj
+    end
+  end
+  
   self.close = function(_,cb)
     listenIo:stop(loop)
     lsock:close()
