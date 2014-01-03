@@ -7,7 +7,7 @@ local process = require'nodish.process'
 
 net.createServer(function(client)
     client:pipe(client)
-    client:pipe(process.stdout)
-  end).listen(12345)
+    client:pipe(process.stdout,false)
+  end):listen(12345)
 
 process.loop()

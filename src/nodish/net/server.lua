@@ -5,10 +5,12 @@ local emitter = require'nodish.emitter'
 local ev = require'ev'
 local nsocket = require'nodish.net.socket'
 local util = require'nodish._util'
+local dns = require'nodish.dns'
+local ffi = require'ffi'
 
 local loop = ev.Loop.default
 
-local INADDR_ANY = 0
+local INADDR_ANY = 0x0
 
 local inaddr = function(port,addr)
   local inaddr = S.t.sockaddr_in()
@@ -17,7 +19,7 @@ local inaddr = function(port,addr)
   if host then
     inaddr.addr = addr
   else
-    inaddr.sin_addr = h.htonl(INADDR_ANY)
+    inaddr.sin_addr.s_addr = INADDR_ANY--h.htonl(INADDR_ANY)
   end
   return inaddr
 end
@@ -29,20 +31,33 @@ local sbind = function(host,port,backlog)
   server:nonblock(true)
   server:setsockopt('socket','reuseaddr',true)
   -- TODO respect host
-  local hostAddr = dns.getaddrinfo(host)[1].addr --maybe nil
+  local hostAddr
+  if host then
+    hostAddr = dns.getaddrinfo(host)[1].addr --maybe nil
+  end
   server:bind(inaddr(port,hostAddr))
   server:listen(backlog or 511)
   return server
 end
 
 local new = function(options)
+  local allowHalfOpen = options and options.allowHalfOpen
   local self = emitter.new()
   local conCount = 0
   local lsock
   local listenIo
+  local closing
+  
+  self:once('error',function(err)
+      if lsock then
+        lsock:close()
+      end
+      self:emit('close',err)
+    end)
   
   self.listen = function(_,port,host,backlog,callback)
-    lsock = sbind(host or '*',port,backlog or 511)
+    assert(_ == self)
+    lsock = sbind(host,port,backlog)
     nextTick(function()
         self:emit('listening',self)
       end)
@@ -51,17 +66,18 @@ local new = function(options)
     end
     listenIo = ev.IO.new(
       function()
-        local ss = S.types.t.sockaddr_storage()
         local sock,err = lsock:accept()
         if sock then
           local s = nsocket.new({
               fd = sock,
-              allowHalfOpen = options.allowHalfOpen
+              allowHalfOpen = allowHalfOpen
           })
           conCount = conCount + 1
+          assert(conCount > 0)
           s:once('close',function()
+              assert(conCount > 0)
               conCount = conCount - 1
-              if conCount == 0 then
+              if closing and conCount == 0 then
                 self:emit('close')
               end
             end)
@@ -100,6 +116,7 @@ local new = function(options)
   self.close = function(_,cb)
     listenIo:stop(loop)
     lsock:close()
+    closing = true
     if cb then
       self:once('close',cb)
     end

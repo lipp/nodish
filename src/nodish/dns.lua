@@ -1,7 +1,7 @@
 local S = require'syscall'
 local ffi = require'ffi'
 
-if ffi.os == 'OSX' then  
+if ffi.os == 'OSX' then
   ffi.cdef[[
   struct addrinfo {
     int             ai_flags;
