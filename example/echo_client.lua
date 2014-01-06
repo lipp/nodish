@@ -7,7 +7,16 @@ local process = require'nodish.process'
 
 local client = net.connect(12345)
 
-process.stdin:resume()
-process.stdin:pipe(client)
+client:on('connect',function()
+    print('connected to server')
+    process.stdin:resume()
+    process.stdin:pipe(client)
+  end)
+
+client:on('fin',function(e)
+    print('server closed')
+    process.stdin:unpipe(client)
+    os.exit(1)
+  end)
 
 process.loop()
