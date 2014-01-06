@@ -1,5 +1,5 @@
 local S = require'syscall'
-local emitter = require'nodish.emitter'
+local events = require'nodish.events'
 local stream = require'nodish.stream'
 local nextTick = require'nodish.nexttick'.nextTick
 local util = require'nodish._util'
@@ -37,7 +37,7 @@ local new = function(options)
   local writable = options.writable or true
   local allowHalfOpen = options.allowHalfOpen or false
   local sock = options.fd or nil
-  local self = emitter.new()
+  local self = events.EventEmitter()
   local watchers = {}
   self.watchers = watchers
   

@@ -1,7 +1,7 @@
 local tinsert = table.insert
 local tremove = table.remove
 
-local new = function()
+local EventEmitter = function()
   local self = {}
   local listeners = {}
   local maxListeners = 10
@@ -96,5 +96,5 @@ local new = function()
 end
 
 return {
-  new = new,
+  EventEmitter = EventEmitter,
 }

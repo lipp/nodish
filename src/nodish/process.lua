@@ -1,11 +1,11 @@
 local ev = require'ev'
 local S = require'syscall'
-local emitter = require'nodish.emitter'
+local events = require'nodish.events'
 local stream = require'nodish.stream'
 local tinsert = table.insert
 
 local stdin = function()
-  local self = emitter.new()
+  local self = events.EventEmitter()
   self.watchers = {}
   stream.readable(self)
   S.stdin:nonblock(true)
@@ -17,7 +17,7 @@ local stdin = function()
 end
 
 local stdout = function()
-  local self = emitter.new()
+  local self = events.EventEmitter()
   self.watchers = {}
   stream.writable(self)
   S.stdout:nonblock(true)
@@ -29,7 +29,7 @@ local stdout = function()
 end
 
 local stderr = function()
-  local self = emitter.new()
+  local self = events.EventEmitter()
   self.watchers = {}
   stream.writable(self)
   S.stderr:nonblock(true)

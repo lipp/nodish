@@ -1,17 +1,17 @@
-describe('The emitter module',function()
-    local emitter = require'nodish.emitter'
-    it('provides new method',function()
-        assert.is_function(emitter.new)
+describe('The events module',function()
+    local events = require'nodish.events'
+    it('provides EventEmitter method',function()
+        assert.is_function(events.EventEmitter)
       end)
     
     it('esock.new returns an object/table',function()
-        assert.is_table(emitter.new())
+        assert.is_table(events.EventEmitter())
       end)
     
     describe('with an emitter instance',function()
         local i
         before_each(function()
-            i = emitter.new()
+            i = events.EventEmitter()
           end)
         
         local expectedMethods = {

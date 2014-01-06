@@ -1,7 +1,7 @@
 local nextTick = require'nodish.process'.nextTick
 local S = require'syscall'
 local h = require "syscall.helpers"
-local emitter = require'nodish.emitter'
+local events = require'nodish.events'
 local ev = require'ev'
 local nsocket = require'nodish.net.socket'
 local util = require'nodish._util'
@@ -42,7 +42,7 @@ end
 
 local new = function(options)
   local allowHalfOpen = options and options.allowHalfOpen
-  local self = emitter.new()
+  local self = events.EventEmitter()
   local conCount = 0
   local lsock
   local listenIo
