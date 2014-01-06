@@ -58,15 +58,46 @@ local readable = function(emitter)
     self.watchers.read:start(loop)
   end
   
-  self.pipe = function(_,writable,autoFin)
-    self:on('data',function(data)
-        writable:write(data)
-      end)
-    if autoFin == nil or autoFin == true then
-      self:on('fin',function()
-          writable:fin()
-        end)
+  local piped = {}
+  
+  local removePipeCallbacks = function(callbacks)
+    self:removeListener('data',callbacks.forwardData)
+    if callbacks.fowardFin then
+      self:removeListener('',callbacks.forwardFin)
     end
+  end
+  
+  self.pipe = function(_,writable,options)
+    if piped[writable] then
+      error('pipe to writable already open')
+    end
+    local callbacks = {}
+    piped[writable] = callbacks
+    callbacks.forwardData = function(data)
+      writable:write(data)
+    end
+    self:on('data',callbacks.forwardData)
+    if options and options.fin then
+      callbacks.forwardFin = function()
+        writable:fin()
+      end
+      self:on('fin',callbacks.forwardFin)
+    end
+    callbacks.cleanup = function()
+      removePipeCallbacks(callbacks)
+      writable:removeListener('fin',callbacks.cleanup)
+    end
+    writable:once('fin',callbacks.cleanup)
+    writable:emit('pipe')
+  end
+  
+  self.unpipe = function(_,writable)
+    if not piped[writable] then
+      error('pipe to writable not open')
+    end
+    piped[writable].cleanup()
+    piped[writable] = nil
+    writable:emit('unpipe')
   end
   
 end
