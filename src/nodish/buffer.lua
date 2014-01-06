@@ -49,11 +49,19 @@ for typeName,typeInfo in pairs(types) do
   local ctype = typeInfo.ctype..'*'
   local size = typeInfo.size
   methods[readName] = function(self,offset,noAssert)
-     if not noAssert then
-        if 
+    if not noAssert then
+      if offset + size >= self.length then
+        error('out of bounds')
+      end
+    end
     return ffi.cast(ctype,self.buf + offset)[0]
   end
-  local swapRead = function(self,offset)
+  local swapRead = function(self,offset,noAssert)
+    if not noAssert then
+      if offset + size >= self.length then
+        error('out of bounds')
+      end
+    end
     for i=0,size-1 do
       tmpBuf[i] = self.buf[size-i-1+offset]
     end
@@ -73,11 +81,21 @@ for typeName,typeInfo in pairs(types) do
   local writeName = 'write'..typeName
   local size = typeInfo.size
   local store = ffi.new(typeInfo.ctype..'[1]')
-  methods[writeName] = function(self,val,offset)
+  methods[writeName] = function(self,val,offset,noAssert)
+    if not noAssert then
+      if offset + size >= self.length then
+        error('out of bounds')
+      end
+    end
     store[0] = val
     ffi.C.memcpy(self.buf + offset,store,size)
   end
-  local swapWrite = function(self,val,offset)
+  local swapWrite = function(self,val,offset,noAssert)
+    if not noAssert then
+      if offset + size >= self.length then
+        error('out of bounds')
+      end
+    end
     store[0] = val
     for i=0,size-1 do
       tmpBuf[i] = store[size-i-1]
@@ -111,6 +129,7 @@ local Buffer = function(size)
   local buf = ffi.new('uint8_t [?]',size)
   local self = {}
   self.buf = buf
+  self.length = size
   self.dump = function()
     local hex = {}
     for i=0,size-1 do
