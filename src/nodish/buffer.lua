@@ -14,10 +14,30 @@ local types = {
     ctype = 'float',
     size = 4
   },
-  Int32 = {
+  UInt8 = {
+    ctype = 'uint8_t',
+    size = 1,
+  },
+  UInt16 = {
+    ctype = 'uint16_t',
+    size = 2,
+  },
+  UInt32 = {
     ctype = 'uint32_t',
     size = 4,
-  }
+  },
+  Int8 = {
+    ctype = 'int8_t',
+    size = 1,
+  },
+  Int16 = {
+    ctype = 'int16_t',
+    size = 2,
+  },
+  Int32 = {
+    ctype = 'int32_t',
+    size = 4,
+  },
 }
 
 local tmpBuf = ffi.new('uint8_t[8]')
@@ -28,19 +48,16 @@ for typeName,typeInfo in pairs(types) do
   local readName = 'read'..typeName
   local ctype = typeInfo.ctype..'*'
   local size = typeInfo.size
-  methods[readName] = function(self)
-    local val = ffi.cast(ctype,self.pread)[0]
-    self.pread = self.pread + size
-    return val
+  methods[readName] = function(self,offset,noAssert)
+     if not noAssert then
+        if 
+    return ffi.cast(ctype,self.buf + offset)[0]
   end
-  local swapRead = function(self)
-    local pread = self.pread
+  local swapRead = function(self,offset)
     for i=0,size-1 do
-      tmpBuf[i] = pread[size-i-1]
+      tmpBuf[i] = self.buf[size-i-1+offset]
     end
-    local val = ffi.cast(ctype,tmpBuf)[0]
-    self.pread = self.pread + size
-    return val
+    return ffi.cast(ctype,tmpBuf)[0]
   end
   
   if ffi.abi('be') then
@@ -56,19 +73,16 @@ for typeName,typeInfo in pairs(types) do
   local writeName = 'write'..typeName
   local size = typeInfo.size
   local store = ffi.new(typeInfo.ctype..'[1]')
-  methods[writeName] = function(self,val)
+  methods[writeName] = function(self,val,offset)
     store[0] = val
-    ffi.C.memcpy(self.pwrite,store,size)
-    self.pwrite = self.pwrite + size
+    ffi.C.memcpy(self.buf + offset,store,size)
   end
-  local swapWrite = function(self)
+  local swapWrite = function(self,val,offset)
     store[0] = val
     for i=0,size-1 do
       tmpBuf[i] = store[size-i-1]
     end
-    ffi.C.memcpy(self.pwrite,tmpBuf,size)
-    self.pwrite = self.pwrite + size
-    return val
+    ffi.C.memcpy(self.buf + offset,tmpBuf,size)
   end
   
   if ffi.abi('be') then
@@ -96,8 +110,6 @@ local mt = {
 local Buffer = function(size)
   local buf = ffi.new('uint8_t [?]',size)
   local self = {}
-  self.pwrite = buf + 0
-  self.pread = buf + 0
   self.buf = buf
   self.dump = function()
     local hex = {}
