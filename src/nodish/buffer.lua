@@ -1,9 +1,6 @@
 local ffi = require'ffi'
 local S = require'syscall'
 
-ffi.cdef[[
-void * memcpy(void *restrict dst, const void *restrict src, size_t n);
-]]
 
 local types = {
   Double = {
@@ -88,7 +85,7 @@ for typeName,typeInfo in pairs(types) do
       end
     end
     store[0] = val
-    ffi.C.memcpy(self.buf + offset,store,size)
+    ffi.copy(self.buf + offset,store,size)
   end
   local swapWrite = function(self,val,offset,noAssert)
     if not noAssert then
@@ -100,7 +97,7 @@ for typeName,typeInfo in pairs(types) do
     for i=0,size-1 do
       tmpBuf[i] = store[size-i-1]
     end
-    ffi.C.memcpy(self.buf + offset,tmpBuf,size)
+    ffi.copy(self.buf + offset,tmpBuf,size)
   end
   
   if ffi.abi('be') then
@@ -112,6 +109,15 @@ for typeName,typeInfo in pairs(types) do
   end
 end
 
+methods.toString = function(self,encoding,start,stop)
+  start = start or 0
+  local len
+  if stop then
+    len = stop - start
+  end
+  return ffi.string(self.buf + start,len)
+end
+
 local mt = {
   __index = function(self,key)
     if type(key) == 'number' then
@@ -120,22 +126,35 @@ local mt = {
       return methods[key]
     end
   end,
+  __tostring = function(self)
+    local hex = {}
+    hex[1] = '<Buffer'
+    for i=0,math.min(self.length-1,50) do
+      hex[i+2] = string.format('%2x',self.buf[i])
+    end
+    hex[#hex+1] = '>'
+    return table.concat(hex,' ')
+  end,
   __newindex = function(self,key,value)
     self.buf[key] = value
   end
 }
 
-local Buffer = function(size)
-  local buf = ffi.new('uint8_t [?]',size)
+local Buffer = function(arg)
+  local buf
+  local size
+  if type(arg) == 'number' then
+    size = arg
+    buf = ffi.new('uint8_t [?]',size)
+  elseif type(arg) == 'string' then
+    size = #arg
+    buf = ffi.new('uint8_t [?]',#arg, arg)
+  end
   local self = {}
   self.buf = buf
   self.length = size
-  self.dump = function()
-    local hex = {}
-    for i=0,size-1 do
-      hex[i+1] = string.format('%2x',buf[i])
-    end
-    print(table.concat(hex,' '))
+  self.dump = function(self)
+    print(self)
   end
   setmetatable(self,mt)
   return self
