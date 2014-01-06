@@ -19,10 +19,10 @@ Echo Server
 local net = require'nodish.net'
 local process = require'nodish.process'
 
-net.listen(12345):on('connection',function(client)
+net.createServer(function(client)
 	client:pipe(client)
 	client:pipe(process.stdout)
-  end)
+  end):listen(12345)
 
 process.loop()    
 ```
