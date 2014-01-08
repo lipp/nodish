@@ -6,6 +6,7 @@ local util = require'nodish._util'
 local ev = require'ev'
 local ffi = require'ffi'
 local dns = require'nodish.dns'
+local buffer = require'nodish.buffer'
 
 local loop = ev.Loop.default
 
@@ -94,16 +95,19 @@ local new = function(options)
     addAddressesToSelf()
     if readable then
       local chunkSize = 4096*20 -- about 100k
-      local buf = S.t.buffer(chunkSize)
+      local buf
       -- provide read mehod for stream
       self._read = function()
         if not sock then
           return '',nil,true
         end
-        local ret,err = sock:read(buf,chunkSize)
+        if not buf or not buf:isReleased() then
+          buf = buffer.Buffer(chunkSize)
+        end
+        local ret,err = sock:read(buf.buf,chunkSize)
         local data
         if ret then
-          data = ffi.string(buf,ret)
+          data = buf:toString('utf8',0,ret)
         end
         return data,err
       end
