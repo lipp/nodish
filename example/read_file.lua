@@ -6,7 +6,8 @@ local process = require'nodish.process'
 local fs = require'nodish.fs'
 
 fs.readFile(this_dir..'../README.md',function(err,data)
-    print(err,data,#data)
+    process.stdout:write(data)
   end)
 
 process.loop()
+
