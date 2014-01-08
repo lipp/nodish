@@ -87,7 +87,7 @@ local readFile = function(path,callback)
       print(data.length)
       content = content..data:toString()
     end)
-  rs:on('fin',function()           
+  rs:on('fin',function()
       callback(nil,content)
     end)
 end
