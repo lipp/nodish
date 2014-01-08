@@ -188,6 +188,7 @@ describe('The net.socket module',function()
                   assert.is_nil(err)
               end))
             i:connect(12345)
+            i:setEncoding('utf8')
           end)
         
         it('support ipv6',function(done)
