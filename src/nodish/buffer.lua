@@ -115,13 +115,19 @@ methods.write = function(self,string,offset,length,encoding)
   ffi.copy(self.buf + offset,string,math.min(length,#string))
 end
 
-methods.toString = function(self,encoding,start,stop)
-  start = start or 0
-  local len
-  if stop then
-    len = stop - start
-  end
-  return ffi.string(self.buf + start,len)
+methods.toString = function(self,encoding,offset,stop)
+  offset = offset or 0
+  stop = stop or self.length
+  local len = stop - offset
+  return ffi.string(self.buf + offset,len)
+end
+
+methods.fill = function(self,value,offset,stop)
+  print(self.length)
+  offset = offset or 0
+  stop = stop or self.length
+  local len = stop - offset
+  ffi.fill(self.buf+offset,len,string.byte(value))
 end
 
 methods.release = function(self,release)
@@ -130,6 +136,11 @@ end
 
 methods.isReleased = function(self)
   return self.released
+end
+
+methods._setLength = function(self,length)
+  assert(length <= self.length)
+  self.length = length
 end
 
 local mt = {
