@@ -192,6 +192,11 @@ local Buffer = function(arg)
   return self
 end
 
+local isBuffer = function(x)
+  return getmetatable(x) == mt
+end
+
 return {
-  Buffer = Buffer
+  Buffer = Buffer,
+  isBuffer = isBuffer
 }
