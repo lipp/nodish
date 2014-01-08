@@ -5,11 +5,24 @@ local loop = ev.Loop.default
 local EAGAIN = S.c.E.AGAIN
 
 local nextTick = require'nodish.nexttick'.nextTick
+local buffer = require'nodish.buffer'
 
 local readable = function(emitter)
   local self = emitter
   self.bytesRead = 0
   assert(self.watchers)
+  local encoding
+  
+  self.setEncoding = function(_,enc)
+    if not enc then
+      encoding = nil
+    elseif enc:lower() == 'utf8' or enc:lower() == 'utf-8' then
+      encoding = 'utf8'
+    else
+      error('encoding not supported '..encoding)
+    end
+  end
+  
   self.addReadWatcher = function(_,fd)
     assert(self._read)
     if self.watchers.read then
@@ -19,20 +32,25 @@ local readable = function(emitter)
     watchers.read = ev.IO.new(function(loop,io)
         self:emit('readable')
         repeat
-          local data,err = self:_read()
-          if data then
-            if #data > 0 then
-              self.bytesRead = self.bytesRead + #data
-              if watchers.timer then
-                watchers.timer:again(loop)
-              end
-              self:emit('data',data)
-            else
-              self:emit('fin')
-              io:stop(loop)
-              return
+          local buf,err,fin = self:_read()
+          if buf then
+            assert(buf.length > 0)
+            self.bytesRead = self.bytesRead + buf.length
+            if watchers.timer then
+              watchers.timer:again(loop)
             end
+            local data = buf
+            if encoding then
+              assert(encoding == 'utf8')
+              data = buf:toString()
+            end
+            self:emit('data',data)
+          elseif fin then
+            self:emit('fin')
+            io:stop(loop)
+            return
           elseif err and err.errno ~= EAGAIN then
+            io:stop(loop)
             self:emit('error',err)
             err = nil
           end
@@ -145,6 +163,9 @@ local writable = function(emitter)
   --may be overwritten by 'subclass/implementors'
   -- save for usage in fin
   local write = function(_,data)
+    if buffer.isBuffer(data) then
+      data = data:toString()
+    end
     if pending then
       pending = pending..data
     elseif ended then

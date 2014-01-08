@@ -2,15 +2,33 @@ local ev = require'ev'
 local S = require'syscall'
 local events = require'nodish.events'
 local stream = require'nodish.stream'
+local buffer = require'nodish.buffer'
 local tinsert = table.insert
 
 local stdin = function()
   local self = events.EventEmitter()
   self.watchers = {}
   stream.readable(self)
+  self:setEncoding('utf8')
   S.stdin:nonblock(true)
+  local chunkSize = 4096*2
+  local buf
   self._read = function()
-    return S.stdin:read()
+    if not buf or not buf:isReleased() then
+      buf = buffer.Buffer(chunkSize)
+    end
+    local ret,err = S.stdin:read(buf.buf,chunkSize)
+    if ret then
+      if ret > 0 then
+        buf:_setLength(ret)
+        assert(buf.length == ret)
+        data = buf
+        return data,err
+      elseif ret == 0 then
+        return nil,nil,true
+      end
+    end
+    return nil,err
   end
   self:addReadWatcher(S.stdin:getfd())
   return self

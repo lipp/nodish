@@ -94,22 +94,28 @@ local new = function(options)
     
     addAddressesToSelf()
     if readable then
-      local chunkSize = 4096*20 -- about 100k
+      local chunkSize = 4096*2
       local buf
       -- provide read mehod for stream
       self._read = function()
         if not sock then
-          return '',nil,true
+          return nil,nil,true
         end
         if not buf or not buf:isReleased() then
           buf = buffer.Buffer(chunkSize)
         end
         local ret,err = sock:read(buf.buf,chunkSize)
-        local data
         if ret then
-          data = buf:toString('utf8',0,ret)
+          if ret > 0 then
+            buf:_setLength(ret)
+            assert(buf.length == ret)
+            data = buf
+            return data,err
+          elseif ret == 0 then
+            return nil,nil,true
+          end
         end
-        return data,err
+        return nil,err
       end
       self:addReadWatcher(sock:getfd())
       self:resume()
