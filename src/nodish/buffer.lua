@@ -118,8 +118,19 @@ methods.toString = function(self,encoding,start,stop)
   return ffi.string(self.buf + start,len)
 end
 
+methods.release = function(self,release)
+  self.released = release ~= nil and release or true
+end
+
+methods.isReleased = function(self)
+  return self.released
+end
+
 local mt = {
   __index = function(self,key)
+    if rawget(self,'released') then
+      error('buffer is released and cannot be accesed',2)
+    end
     if type(key) == 'number' then
       return self.buf[key]
     else
@@ -136,6 +147,9 @@ local mt = {
     return table.concat(hex,' ')
   end,
   __newindex = function(self,key,value)
+    if self.released then
+      error('buffer is released and cannot be accesed',2)
+    end
     self.buf[key] = value
   end
 }
@@ -151,6 +165,7 @@ local Buffer = function(arg)
     buf = ffi.new('uint8_t [?]',#arg, arg)
   end
   local self = {}
+  self.released = false
   self.buf = buf
   self.length = size
   self.dump = function(self)
