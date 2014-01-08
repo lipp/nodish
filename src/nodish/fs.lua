@@ -82,13 +82,13 @@ local readFile = function(path,callback)
   rs:on('error',function(err)
       callback(err)
     end)
-  local allData = ''
+  local content = ''
   rs:on('data',function(data)
       print(data.length)
-      allData = allData..data:toString()
+      content = content..data:toString()
     end)
-  rs:on('fin',function()
-      callback(nil,allData)
+  rs:on('fin',function()           
+      callback(nil,content)
     end)
 end
 
