@@ -83,10 +83,11 @@ sudo luarocks make rockspecs/nodish-scm-1.rockspec
 Status
 ======
 
- Module      | Status          | API                             
--------------|-----------------|---------------------------------
- net         | Almost complete | http://nodejs.org/api/net.html
- events      | Complete        | http://nodejs.org/api/events.html
- process     | Partial         | http://nodejs.org/api/process.html
+ Module      | Status          | API                                            | Remarks 
+-------------|-----------------|------------------------------------------------|--------------
+ net         | Almost complete | [net](http://nodejs.org/api/net.html)          |
+ events      | Complete        | [events](http://nodejs.org/api/events.html)    |
+ process     | Partial         | [process](http://nodejs.org/api/process.html)  |
+ buffer      | Almost complete | [buffer](http://nodejs.org/api/buffer.html)    | add buffer.release and buffer.isReleased for better buffer reuse
 
 
