@@ -109,6 +109,12 @@ for typeName,typeInfo in pairs(types) do
   end
 end
 
+methods.write = function(self,string,offset,length,encoding)
+  offset = offset or 0
+  length = length or (self.length - offset)
+  ffi.copy(self.buf + offset,string,math.min(length,#string))
+end
+
 methods.toString = function(self,encoding,start,stop)
   start = start or 0
   local len
