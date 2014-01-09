@@ -1,3 +1,4 @@
+local process = require'nodish.process'
 local ev = require'ev'
 local loop = ev.Loop.default
 local timers = {}
@@ -42,23 +43,27 @@ table_print = function (tt, indent, done)
   done = done or {}
   indent = indent or 0
   if type(tt) == "table" then
-    local sb = {}
-    for key, value in pairs (tt) do
-      table.insert(sb, string.rep (" ", indent)) -- indent it
-      if type (value) == "table" and not done [value] then
-        done [value] = true
-        table.insert(sb, "{\n");
-        table.insert(sb, table_print (value, indent + 2, done))
+    if not getmetatable(tt) or not getmetatable(tt).__tostring then
+      local sb = {}
+      for key, value in pairs (tt) do
         table.insert(sb, string.rep (" ", indent)) -- indent it
-        table.insert(sb, "}\n");
-      elseif "number" == type(key) then
-        table.insert(sb, string.format("\"%s\"\n", tostring(value)))
-      else
-        table.insert(sb, string.format(
-        "%s = \"%s\"\n", tostring (key), tostring(value)))
+        if type (value) == "table" and not done [value] then
+          done [value] = true
+          table.insert(sb, "{\n");
+          table.insert(sb, table_print (value, indent + 2, done))
+          table.insert(sb, string.rep (" ", indent)) -- indent it
+          table.insert(sb, "}\n");
+        elseif "number" == type(key) then
+          table.insert(sb, string.format("\"%s\"\n", tostring(value)))
+        else
+          table.insert(sb, string.format(
+          "%s = \"%s\"\n", tostring (key), tostring(value)))
+        end
       end
+      return table.concat(sb)
+    else
+      return tostring(tt)
     end
-    return table.concat(sb)
   else
     return tt .. "\n"
   end
@@ -81,7 +86,7 @@ console = {}
 console.log = function(...)
   local args = {...}
   for i,arg in ipairs(args) do
-    args[i] = to_string(arg)
+    process.stdout:write(to_string(arg)..'\t')
   end
-  print(unpack(args))
+  process.stdout:write('\n')
 end
