@@ -5,7 +5,7 @@ local nextTick = require'nodish.nexttick'.nextTick
 local util = require'nodish._util'
 local ev = require'ev'
 local buffer = require'nodish.buffer'
-
+local octal = require "syscall.helpers".octal
 local loop = ev.Loop.default
 
 local createReadStream = function(path,options)
@@ -13,7 +13,18 @@ local createReadStream = function(path,options)
   local fd = options.fd
   local encoding = options.encoding
   local flags = options.flags or 'r'
-  local mode = options.mode or "RW"
+  local autoClose
+  if options.autoClose ~= nil then
+    autoClose = options.autoClose
+  else
+    autoClose = true
+  end
+  local mode
+  if options.mode then
+    mode = octal(options.mode)
+  else
+    mode = octal('0666')
+  end
   local self = events.EventEmitter()
   self.watchers = {}
   stream.readable(self)
@@ -32,13 +43,12 @@ local createReadStream = function(path,options)
     for _,watcher in pairs(self.watchers) do
       watcher:stop(loop)
     end
-    if fd then
+    if fd and autoClose then
       fd:close()
-      sock = nil
+      fd = nil
       self:emit('close',hadError)
     end
   end
-  
   
   self:once('error',function(err)
       local hadError = err and true
@@ -57,7 +67,6 @@ local createReadStream = function(path,options)
       buf = buffer.Buffer(chunkSize)
     end
     local ret,err = fd:read(buf.buf,chunkSize)
-    print(ret,err,'e')
     if ret then
       if ret > 0 then
         buf:_setLength(ret)
@@ -71,8 +80,11 @@ local createReadStream = function(path,options)
     return nil,err
   end
   
-  self:addReadWatcher(fd:getfd())
-  self:resume()
+  nextTick(function()
+      self:emit('open',fd:getfd())
+      self:addReadWatcher(fd:getfd())
+      self:resume()
+    end)
   
   return self
 end
@@ -84,7 +96,6 @@ local readFile = function(path,callback)
     end)
   local content = ''
   rs:on('data',function(data)
-      print(data.length)
       content = content..data:toString()
     end)
   rs:on('fin',function()
