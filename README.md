@@ -12,7 +12,7 @@ This framework might be for you, if you want node.js like API, but:
 - You need a lua-ev backend
 - You are interested in a "Lua-only" (>90%) implementation
 
-Unlike [luvit](http://github.com/luvit/luvit) or [LuaNode](http://github.com/ignacio/luanode) this project does try NOT (yet) to be a complete node.js port. Instead it tries to keep dependecies as minimal as possible to keep size small for embedded systems. To use nodish you need:
+Unlike [luvit](http://github.com/luvit/luvit) or [LuaNode](http://github.com/ignacio/luanode) this project does NOT (yet) try to be a complete node.js port. Instead it tries to keep dependecies as minimal as possible to keep size small for embedded systems. To use nodish you need:
 
 Interpreter
 -----------
