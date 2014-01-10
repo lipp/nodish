@@ -3,11 +3,34 @@ nodish
 
 A lightweight Lua equivalent to [Node.js](http://nodejs.org). [![Build Status](https://travis-ci.org/lipp/nodish.png?branch=master)](https://travis-ci.org/lipp/nodish).
 
+Motivation / Target Audience
+============================
+
+This framework might be for you, if you want node.js like API, but:
+
+- You have very limited ressources (memory)
+- You need a lua-ev backend
+- You are interested in a "Lua-only" (>90%) implementation
+
 Unlike [luvit](http://github.com/luvit/luvit) or [LuaNode](http://github.com/ignacio/luanode) this project does try NOT (yet) to be a complete node.js port. Instead it tries to keep dependecies as minimal as possible to keep size small for embedded systems. To use nodish you need:
 
+Interpreter
+-----------
+- [luajit](http://luajit.org) (or Lua + luaffi)
+
+Lua modules
+-----------
 - [ljsyscall](http://github.com/justincormack/ljsyscall) to interface to the system (sockets,read,write,etc)
 - [lua-ev](http://github.com/brimworks/lua-ev) as I/O loop framework
 
+C libraries
+-----------
+- Any ljsyscall compatible libc
+- [libev](http://software.schmorp.de/pkg/libev.html)
+
+To reduce size further, you may be interested in [squish](http://matthewwild.co.uk/projects/squish/home). 
+
+NOTE: If you have no ressource problems, you should use a more robust and mature implementation like [luvit](http://github.com/luvit/luvit) or [LuaNode](http://github.com/ignacio/luanode) or event better, just use the fantastic [Node.js](http://nodejs.org)!
 
 Examples
 ========
