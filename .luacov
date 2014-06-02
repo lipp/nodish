@@ -25,7 +25,7 @@ return {
   -- (exclude overrules include, do not include
   -- the .lua extension)
   ["include"] = {
-     "net%.*"
+     "nodish%.*"
   },
 
   -- Patterns for files to exclude when reporting
